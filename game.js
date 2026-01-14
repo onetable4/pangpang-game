@@ -201,7 +201,10 @@ async function loadLeaderboard() {
         }
     } catch (e) {
         console.error("Error loading leaderboard: ", e);
-        leaderboardList.innerHTML = '<div class="loading">오류가 발생했습니다.</div>';
+        leaderboardList.innerHTML = `<div class="loading" style="color: #ff6b6b; font-size: 0.9rem;">
+            오류가 발생했습니다.<br>
+            <span style="font-size: 0.8rem; opacity: 0.8;">${e.code || ''} ${e.message}</span>
+        </div>`;
     }
 }
 
