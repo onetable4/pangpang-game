@@ -36,10 +36,10 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    /* 투명도 조절 (0.85 -> 0.5) */
-    backdrop-filter: blur(3px);
-    /* 블러 효과로 뒤쪽 프레임 느낌 살림 */
+    background: rgba(0, 0, 0, 0.15);
+    /* 투명도 대폭 낮춤 (0.5 -> 0.15) 뒤가 잘 보이게 */
+    backdrop-filter: blur(2px);
+    /* 블러도 살짝 줄임 */
     display: flex;
     justify-content: center;
     align-items: center;
