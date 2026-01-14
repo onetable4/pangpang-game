@@ -275,7 +275,9 @@ body {
 }
 
 /* 특수 블록 스타일 */
-.tile.special-line {
+.tile.special-line,
+.tile.special-h-line,
+.tile.special-v-line {
     background: linear-gradient(135deg, #ff6b6b, #ffa726, #42a5f5, #66bb6a);
     background-size: 300% 300%;
     animation: line-glow 1.5s ease infinite;

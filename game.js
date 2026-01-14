@@ -227,14 +227,18 @@ async function endGame() {
     // 1등인지 확인
     try {
         const scoresRef = ref(db, 'scores');
-        const topScoreQuery = query(scoresRef, orderByChild('score'), limitToLast(1));
+        // 전체 점수를 가져와서 직접 비교 (DB 문자열 정렬 문제 해결)
+        // 데이터가 아주 많아지면 limitToLast(100) 등으로 최적화 필요하지만 지금은 안전성 우선
+        const topScoreQuery = query(scoresRef, orderByChild('score'));
         const snapshot = await get(topScoreQuery);
 
         let highestScore = 0;
         if (snapshot.exists()) {
             snapshot.forEach((child) => {
-                // 문자열로 저장되었을 경우를 대비해 숫자로 변환
-                highestScore = Number(child.val().score);
+                const s = Number(child.val().score);
+                if (s > highestScore) {
+                    highestScore = s;
+                }
             });
         }
 
