@@ -6,6 +6,7 @@ import { getDatabase, ref, push, query, orderByChild, limitToLast, get } from "h
 const firebaseConfig = {
     apiKey: "AIzaSyAX0l8-8L3lPMWZvrEEEOCosAUAV5GVu2Y",
     authDomain: "pangpang-28211.firebaseapp.com",
+    databaseURL: "https://pangpang-28211-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "pangpang-28211",
     storageBucket: "pangpang-28211.firebasestorage.app",
     messagingSenderId: "1094639744530",
