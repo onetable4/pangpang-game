@@ -395,11 +395,17 @@ function handleTouchEnd(e, row, col) {
     touchStartTile = null;
 }
 
+// 특수 블록 아이콘
+const SPECIAL_ICONS = {
+    LINE: '💎',   // 4매치
+    COLOR: '⚡'   // 5매치
+};
+
 // 특수 블록 발동
 async function activateSpecialBlock(row, col) {
     isProcessing = true;
     const specialType = specialBoard[row][col];
-    const tileType = board[row][col];
+    // tileType은 더 이상 보드에서 가져오지 않음 (아이콘이 바뀌었으므로)
     const tilesToClear = [];
 
     if (specialType === SPECIAL_TYPES.LINE) {
@@ -435,33 +441,52 @@ async function activateSpecialBlock(row, col) {
             }
         }
     } else if (specialType === SPECIAL_TYPES.COLOR) {
-        // 같은 동물 전체 삭제
+        // 랜덤한 동물 하나 선택하여 전체 삭제
+        const targetType = TILE_TYPES[Math.floor(Math.random() * TILE_TYPES.length)];
+
+        // 어떤 동물이 삭제되는지 팝업으로 알림
+        showScorePopup(`${targetType} 삭제!`);
+        await delay(300);
+
         for (let r = 0; r < BOARD_SIZE; r++) {
             for (let c = 0; c < BOARD_SIZE; c++) {
-                if (board[r][c] === tileType) {
+                if (board[r][c] === targetType) {
                     tilesToClear.push({ row: r, col: c });
                 }
             }
         }
     }
 
-    // 점수 계산
-    const clearScore = tilesToClear.length * 15 * combo;
+    // 점수 계산 (특수 블록 자체도 점수에 포함)
+    tilesToClear.push({ row, col });
+
+    // 중복 제거
+    const uniqueTiles = [];
+    const visited = new Set();
+    tilesToClear.forEach(t => {
+        const key = `${t.row},${t.col}`;
+        if (!visited.has(key)) {
+            visited.add(key);
+            uniqueTiles.push(t);
+        }
+    });
+
+    const clearScore = uniqueTiles.length * 20 * combo; // 점수 상향
     score += clearScore;
     updateScore();
     showScorePopup(clearScore);
 
     // 애니메이션
     const tiles = document.querySelectorAll('.tile');
-    tilesToClear.forEach(({ row: r, col: c }) => {
+    uniqueTiles.forEach(({ row: r, col: c }) => {
         const tile = tiles[r * BOARD_SIZE + c];
         if (tile) tile.classList.add('line-clear');
     });
 
     await delay(500);
 
-    // 타일 제거 (특수 블록 자체도 포함)
-    tilesToClear.forEach(({ row: r, col: c }) => {
+    // 타일 제거
+    uniqueTiles.forEach(({ row: r, col: c }) => {
         board[r][c] = null;
         specialBoard[r][c] = null;
     });
@@ -587,6 +612,7 @@ async function shuffleBoard() {
 
     for (let row = 0; row < BOARD_SIZE; row++) {
         for (let col = 0; col < BOARD_SIZE; col++) {
+            // 특수 블록 아이콘은 셔플 대상에서 제외
             if (!specialBoard[row][col]) {
                 normalTiles.push(board[row][col]);
                 positions.push({ row, col });
@@ -763,16 +789,14 @@ async function processMatches() {
                 specialBlocksToCreate.push({
                     row: centerTile.row,
                     col: centerTile.col,
-                    type: SPECIAL_TYPES.COLOR,
-                    tileType: board[centerTile.row][centerTile.col]
+                    type: SPECIAL_TYPES.COLOR
                 });
             } else if (match.length === 4) {
                 // 4개: 통합 라인 클리어 블록
                 specialBlocksToCreate.push({
                     row: centerTile.row,
                     col: centerTile.col,
-                    type: SPECIAL_TYPES.LINE,
-                    tileType: board[centerTile.row][centerTile.col]
+                    type: SPECIAL_TYPES.LINE
                 });
             }
 
@@ -811,9 +835,14 @@ async function processMatches() {
             }
         });
 
-        // 특수 블록 생성
+        // 특수 블록 생성 (아이콘 변경)
         specialBlocksToCreate.forEach(special => {
             specialBoard[special.row][special.col] = special.type;
+            if (special.type === SPECIAL_TYPES.LINE) {
+                board[special.row][special.col] = SPECIAL_ICONS.LINE;
+            } else if (special.type === SPECIAL_TYPES.COLOR) {
+                board[special.row][special.col] = SPECIAL_ICONS.COLOR;
+            }
         });
 
         // 타일 떨어뜨리기
