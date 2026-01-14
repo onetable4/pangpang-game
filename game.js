@@ -233,11 +233,12 @@ async function endGame() {
         let highestScore = 0;
         if (snapshot.exists()) {
             snapshot.forEach((child) => {
-                highestScore = child.val().score;
+                // 문자열로 저장되었을 경우를 대비해 숫자로 변환
+                highestScore = Number(child.val().score);
             });
         }
 
-        if (score > highestScore) {
+        if (Number(score) > highestScore) {
             // 1등임! -> 축하 메시지 및 강조
             newRecordMessage.textContent = "🏆 전체 1등 달성! 🏆";
             newRecordMessage.classList.remove('hidden');
@@ -248,9 +249,6 @@ async function endGame() {
             submitScoreBtn.textContent = "명예의 전당 등록";
         } else {
             // 1등 아님 -> 일반 종료
-            // 개인 기록 갱신 확인 (축하 메시지는 1등 아닐 땐 표시 안 함 요청에 따름, 혹은 작게 표시?)
-            // 요청: "1등일때만 기록경신을 축하해주고" -> 1등 아니면 조용히.
-
             msgLabel.style.color = '#fff';
             msgLabel.textContent = "오늘의 한마디";
             msgInput.placeholder = "게임 소감을 남겨주세요";
@@ -1078,7 +1076,7 @@ async function processMatches(lastSwappedTile = null) {
         });
 
         // 애니메이션 대기
-        await delay(300);
+        await delay(100);
 
         // 특수 블록 생성
         if (specialType) {
@@ -1090,14 +1088,14 @@ async function processMatches(lastSwappedTile = null) {
     }
 
     updateScore();
-    await delay(300);
+    // 점수 업데이트 딜레이 제거 (즉시 반응)
 
     // 타일 떨어뜨리고 채우기
     await dropTiles();
     await fillBoard();
     renderBoard();
 
-    await delay(300);
+    await delay(150);
 
     // 연쇄 매치 확인 (재귀 아님, 루프 혹은 호출)
     // processMatches는 async이므로, 현재 작업 끝난 후 다시 확인
