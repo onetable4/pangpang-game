@@ -201,7 +201,7 @@ const championSection = document.getElementById('championSection');
 const championMessageDisplay = document.getElementById('championMessageDisplay');
 const championNameDisplay = document.getElementById('championNameDisplay');
 
-// 게임 종료
+// 게임 종료 처리
 async function endGame() {
     gameStarted = false;
     if (gameTimer) {
@@ -213,9 +213,14 @@ async function endGame() {
     endOverlay.classList.remove('hidden');
 
     // UI 초기화
-    submitScoreBtn.classList.add('hidden'); // 일단 숨김 (자동 저장하거나, 1등일 때만 표시)
-    championInputArea.classList.add('hidden');
-    newRecordMessage.classList.add('hidden');
+    submitScoreBtn.classList.remove('hidden'); // 항상 표시 (등록 버튼)
+    championInputArea.classList.remove('hidden'); // 항상 표시 (메시지 입력)
+    newRecordMessage.classList.add('hidden'); // 기본 숨김
+
+    // 입력창 초기화
+    const msgInput = document.getElementById('championMessageInput');
+    const msgLabel = championInputArea.querySelector('p');
+    msgInput.value = '';
 
     if (score === 0) return;
 
@@ -233,32 +238,33 @@ async function endGame() {
         }
 
         if (score > highestScore) {
-            // 1등임! -> 입력창 표시 및 수동 저장 대기
+            // 1등임! -> 축하 메시지 및 강조
             newRecordMessage.textContent = "🏆 전체 1등 달성! 🏆";
             newRecordMessage.classList.remove('hidden');
-            championInputArea.classList.remove('hidden');
-            submitScoreBtn.classList.remove('hidden'); // 등록 버튼 표시
+
+            msgLabel.style.color = '#ffd700';
+            msgLabel.textContent = "👑 명예의 전당에 남길 한마디 👑";
+            msgInput.placeholder = "챔피언의 소감을 남겨주세요!";
             submitScoreBtn.textContent = "명예의 전당 등록";
-
-            // 자동 저장 안 함
         } else {
-            // 1등 아님 -> 기존 로직대로 자동 저장
-            // 개인 기록 갱신 확인
-            const myBest = parseInt(localStorage.getItem('myBestScore') || '0');
-            if (score > myBest) {
-                newRecordMessage.textContent = "🎉 개인 최고기록 갱신! 🎉";
-                newRecordMessage.classList.remove('hidden');
-            }
+            // 1등 아님 -> 일반 종료
+            // 개인 기록 갱신 확인 (축하 메시지는 1등 아닐 땐 표시 안 함 요청에 따름, 혹은 작게 표시?)
+            // 요청: "1등일때만 기록경신을 축하해주고" -> 1등 아니면 조용히.
 
-            await saveScore(playerName, score, null); // 메시지 없음
+            msgLabel.style.color = '#fff';
+            msgLabel.textContent = "오늘의 한마디";
+            msgInput.placeholder = "게임 소감을 남겨주세요";
+            submitScoreBtn.textContent = "점수 등록";
         }
     } catch (e) {
         console.error("Error checking high score: ", e);
-        await saveScore(playerName, score, null); // 에러 시 그냥 저장
+        // 에러 시 일반 모드로
+        msgLabel.textContent = "오늘의 한마디";
+        submitScoreBtn.textContent = "점수 등록";
     }
 }
 
-// 점수 등록 버튼 클릭 (1등일 때만 사용)
+// 점수 등록 버튼 클릭
 submitScoreBtn.addEventListener('click', async () => {
     const msg = championMessageInput.value.trim() || "게임은 즐겁게!";
     await saveScore(playerName, score, msg);

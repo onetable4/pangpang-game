@@ -36,10 +36,8 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.15);
-    /* 투명도 대폭 낮춤 (0.5 -> 0.15) 뒤가 잘 보이게 */
-    backdrop-filter: blur(2px);
-    /* 블러도 살짝 줄임 */
+    background: rgba(0, 0, 0, 0.85);
+    /* 다시 어둡게 (가시성 확보보다는 구분감 우선) */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -54,11 +52,11 @@ body {
 }
 
 .overlay-content {
-    background: rgba(20, 20, 30, 0.9);
-    /* 가독성 유지하되 약간 투명하게 */
-    border: 1px solid rgba(255, 215, 0, 0.3);
-    /* 금색 테두리로 구분감 주기 */
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    background: #1e1e2e;
+    /* 가독성을 위해 완전히 불투명한 진한 남색 배경 */
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    /* 그림자 진하게 */
     width: 90%;
     max-width: 380px;
     max-height: 90%;
