@@ -421,6 +421,83 @@ body {
     font-size: 0.9rem;
 }
 
+/* 챔피언 섹션 스타일 */
+.champion-section {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 100, 0, 0.2));
+    border: 2px solid #ffd700;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+    animation: glow 2s infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+    }
+
+    to {
+        box-shadow: 0 4px 25px rgba(255, 215, 0, 0.6);
+    }
+}
+
+.champion-crown {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #ffd700;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.champion-msg {
+    font-size: 1.2rem;
+    color: #fff;
+    font-style: italic;
+    margin-bottom: 8px;
+    word-break: keep-all;
+    line-height: 1.4;
+}
+
+.champion-name {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: right;
+}
+
+/* 1등 입력 영역 스타일 */
+#championInputArea {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 10px;
+    margin: 15px 0;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+#championMessageInput {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 1rem;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+#championMessageInput::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+#championMessageInput:focus {
+    outline: none;
+    border-color: #ffd700;
+    background: rgba(255, 255, 255, 0.2);
+}
+
 /* Score popup animation */
 .score-popup {
     position: fixed;

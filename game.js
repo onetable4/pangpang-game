@@ -136,6 +136,14 @@ function updateTimer() {
     }
 }
 
+// DOM 요소 추가
+const submitScoreBtn = document.getElementById('submitScoreBtn');
+const championInputArea = document.getElementById('championInputArea');
+const championMessageInput = document.getElementById('championMessageInput');
+const championSection = document.getElementById('championSection');
+const championMessageDisplay = document.getElementById('championMessageDisplay');
+const championNameDisplay = document.getElementById('championNameDisplay');
+
 // 게임 종료
 async function endGame() {
     gameStarted = false;
@@ -147,16 +155,15 @@ async function endGame() {
     finalScore.textContent = score.toLocaleString();
     endOverlay.classList.remove('hidden');
 
-    // 점수 저장
-    await saveScore(playerName, score);
-}
+    // UI 초기화
+    submitScoreBtn.classList.add('hidden'); // 일단 숨김 (자동 저장하거나, 1등일 때만 표시)
+    championInputArea.classList.add('hidden');
+    newRecordMessage.classList.add('hidden');
 
-// Firebase: 점수 저장
-async function saveScore(name, score) {
-    if (score === 0) return; // 0점은 저장하지 않음
+    if (score === 0) return;
 
+    // 1등인지 확인
     try {
-        // 현재 최고 점수 조회
         const scoresRef = ref(db, 'scores');
         const topScoreQuery = query(scoresRef, orderByChild('score'), limitToLast(1));
         const snapshot = await get(topScoreQuery);
@@ -168,28 +175,66 @@ async function saveScore(name, score) {
             });
         }
 
-        // 점수 저장
-        await push(scoresRef, {
-            name: name,
-            score: score,
-            timestamp: Date.now()
-        });
-
-        // 신기록 비교 (현재 점수가 기존 최고 점수보다 높으면)
         if (score > highestScore) {
+            // 1등임! -> 입력창 표시 및 수동 저장 대기
             newRecordMessage.textContent = "🏆 전체 1등 달성! 🏆";
             newRecordMessage.classList.remove('hidden');
+            championInputArea.classList.remove('hidden');
+            submitScoreBtn.classList.remove('hidden'); // 등록 버튼 표시
+            submitScoreBtn.textContent = "명예의 전당 등록";
+
+            // 자동 저장 안 함
         } else {
-            // 개인 최고 기록 비교 (로컬 스토리지 사용)
+            // 1등 아님 -> 기존 로직대로 자동 저장
+            // 개인 기록 갱신 확인
             const myBest = parseInt(localStorage.getItem('myBestScore') || '0');
             if (score > myBest) {
                 newRecordMessage.textContent = "🎉 개인 최고기록 갱신! 🎉";
                 newRecordMessage.classList.remove('hidden');
-                localStorage.setItem('myBestScore', score);
             }
+
+            await saveScore(playerName, score, null); // 메시지 없음
+        }
+    } catch (e) {
+        console.error("Error checking high score: ", e);
+        await saveScore(playerName, score, null); // 에러 시 그냥 저장
+    }
+}
+
+// 점수 등록 버튼 클릭 (1등일 때만 사용)
+submitScoreBtn.addEventListener('click', async () => {
+    const msg = championMessageInput.value.trim() || "게임은 즐겁게!";
+    await saveScore(playerName, score, msg);
+
+    // UI 업데이트
+    championInputArea.classList.add('hidden');
+    submitScoreBtn.classList.add('hidden');
+
+    // 바로 리더보드 보여주기
+    leaderboardOverlay.classList.remove('hidden');
+    loadLeaderboard();
+});
+
+// Firebase: 점수 저장
+async function saveScore(name, score, message) {
+    if (score === 0) return;
+
+    try {
+        const scoresRef = ref(db, 'scores');
+        const data = {
+            name: name,
+            score: score,
+            timestamp: Date.now()
+        };
+
+        // 메시지가 있으면 추가 (1등인 경우)
+        if (message) {
+            data.message = message;
         }
 
-        // 내 최고 기록 업데이트 (항상)
+        await push(scoresRef, data);
+
+        // 내 최고 기록 업데이트
         const myBest = parseInt(localStorage.getItem('myBestScore') || '0');
         if (score > myBest) {
             localStorage.setItem('myBestScore', score);
@@ -203,10 +248,11 @@ async function saveScore(name, score) {
 // Firebase: 리더보드 불러오기
 async function loadLeaderboard() {
     leaderboardList.innerHTML = '<div class="loading">불러오는 중...</div>';
+    championSection.classList.add('hidden'); // 일단 숨김
 
     try {
         const scoresRef = ref(db, 'scores');
-        const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(50)); // 상위 50개
+        const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(50));
 
         const snapshot = await get(topScoresQuery);
 
@@ -218,6 +264,15 @@ async function loadLeaderboard() {
 
             // 점수 내림차순 정렬
             scores.sort((a, b) => b.score - a.score);
+
+            // 1등 메시지 표시
+            if (scores.length > 0) {
+                const champion = scores[0];
+                const msg = champion.message || "도전자를 기다립니다!";
+                championMessageDisplay.textContent = `"${msg}"`;
+                championNameDisplay.textContent = `- ${escapeHtml(champion.name)} -`;
+                championSection.classList.remove('hidden');
+            }
 
             renderLeaderboard(scores);
         } else {
@@ -243,15 +298,23 @@ function renderLeaderboard(scores) {
 
         // 내 기록 강조 (이름으로 단순 비교)
         if (entry.name === playerName && entry.score === score &&
-            (Date.now() - entry.timestamp) < 5000) { // 방금 등록한 기록
+            (Date.now() - entry.timestamp) < 5000) {
             div.classList.add('my-rank');
         }
 
+        const msgIcon = entry.message ? ' 💬' : '';
+
         div.innerHTML = `
             <span class="rank-pos">${rank}</span>
-            <span class="rank-name">${escapeHtml(entry.name)}</span>
+            <span class="rank-name">${escapeHtml(entry.name)}${msgIcon}</span>
             <span class="rank-score">${entry.score.toLocaleString()}</span>
         `;
+
+        // 클릭 시 메시지 토스트? (추후 개선 안)
+        if (entry.message) {
+            div.title = entry.message; // 툴팁으로 표시
+        }
+
         leaderboardList.appendChild(div);
     });
 }
