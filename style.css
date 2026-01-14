@@ -224,24 +224,10 @@ body {
 }
 
 /* 특수 블록 스타일 */
-.tile.special-h {
-    background: linear-gradient(90deg, #ff6b6b, #ffa726, #ff6b6b);
-    animation: glow-h 1s ease infinite alternate;
-}
-
-.tile.special-v {
-    background: linear-gradient(180deg, #42a5f5, #7e57c2, #42a5f5);
-    animation: glow-v 1s ease infinite alternate;
-}
-
-.tile.special-d1 {
-    background: linear-gradient(135deg, #66bb6a, #26a69a, #66bb6a);
-    animation: glow-d 1s ease infinite alternate;
-}
-
-.tile.special-d2 {
-    background: linear-gradient(45deg, #ab47bc, #ec407a, #ab47bc);
-    animation: glow-d 1s ease infinite alternate;
+.tile.special-line {
+    background: linear-gradient(135deg, #ff6b6b, #ffa726, #42a5f5, #66bb6a);
+    background-size: 300% 300%;
+    animation: line-glow 1.5s ease infinite;
 }
 
 .tile.special-color {
@@ -250,33 +236,20 @@ body {
     animation: rainbow 1.5s ease infinite;
 }
 
-@keyframes glow-h {
-    from {
+@keyframes line-glow {
+    0% {
+        background-position: 0% 50%;
         box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
     }
 
-    to {
-        box-shadow: 0 0 20px rgba(255, 167, 38, 0.8);
-    }
-}
-
-@keyframes glow-v {
-    from {
-        box-shadow: 0 0 10px rgba(66, 165, 245, 0.5);
+    50% {
+        background-position: 100% 50%;
+        box-shadow: 0 0 20px rgba(66, 165, 245, 0.8);
     }
 
-    to {
-        box-shadow: 0 0 20px rgba(126, 87, 194, 0.8);
-    }
-}
-
-@keyframes glow-d {
-    from {
-        box-shadow: 0 0 10px rgba(102, 187, 106, 0.5);
-    }
-
-    to {
-        box-shadow: 0 0 20px rgba(38, 166, 154, 0.8);
+    100% {
+        background-position: 0% 50%;
+        box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
     }
 }
 
