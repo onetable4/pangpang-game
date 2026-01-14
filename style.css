@@ -307,10 +307,39 @@ body {
 }
 
 .overlay-content {
+    background: rgba(20, 20, 30, 0.95);
+    /* 더 진하고 불투명하게 */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    width: 90%;
+    max-width: 360px;
+    max-height: 80%;
+    /* 게임 화면 높이의 80%로 제한 */
+    overflow-y: auto;
+    /* 내용 넘치면 스크롤 */
+    padding: 30px;
+    border-radius: 20px;
     text-align: center;
+    position: relative;
+    /* 스크롤바 커스텀 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 215, 0, 0.5) rgba(0, 0, 0, 0.1);
     color: #fff;
-    padding: 24px;
-    width: 100%;
+}
+
+/* 스크롤바 커스텀 (Webkit) */
+.overlay-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.overlay-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.overlay-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.5);
+    border-radius: 3px;
 }
 
 .overlay-content h2 {
