@@ -156,17 +156,45 @@ async function saveScore(name, score) {
     if (score === 0) return; // 0점은 저장하지 않음
 
     try {
+        // 현재 최고 점수 조회
         const scoresRef = ref(db, 'scores');
+        const topScoreQuery = query(scoresRef, orderByChild('score'), limitToLast(1));
+        const snapshot = await get(topScoreQuery);
+
+        let highestScore = 0;
+        if (snapshot.exists()) {
+            snapshot.forEach((child) => {
+                highestScore = child.val().score;
+            });
+        }
+
+        // 점수 저장
         await push(scoresRef, {
             name: name,
             score: score,
             timestamp: Date.now()
         });
 
-        // 간단한 신기록 이펙트 (실제 비교는 하지 않음)
-        if (score > 1000) {
+        // 신기록 비교 (현재 점수가 기존 최고 점수보다 높으면)
+        if (score > highestScore) {
+            newRecordMessage.textContent = "🏆 전체 1등 달성! 🏆";
             newRecordMessage.classList.remove('hidden');
+        } else {
+            // 개인 최고 기록 비교 (로컬 스토리지 사용)
+            const myBest = parseInt(localStorage.getItem('myBestScore') || '0');
+            if (score > myBest) {
+                newRecordMessage.textContent = "🎉 개인 최고기록 갱신! 🎉";
+                newRecordMessage.classList.remove('hidden');
+                localStorage.setItem('myBestScore', score);
+            }
         }
+
+        // 내 최고 기록 업데이트 (항상)
+        const myBest = parseInt(localStorage.getItem('myBestScore') || '0');
+        if (score > myBest) {
+            localStorage.setItem('myBestScore', score);
+        }
+
     } catch (e) {
         console.error("Error saving score: ", e);
     }
