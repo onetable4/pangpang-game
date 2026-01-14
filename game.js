@@ -285,12 +285,6 @@ function renderBoard() {
 function handleTileClick(row, col) {
     if (isProcessing || !gameStarted) return;
 
-    // 특수 블록 클릭 시 발동
-    if (specialBoard[row][col]) {
-        activateSpecialBlock(row, col);
-        return;
-    }
-
     const tiles = document.querySelectorAll('.tile');
     const currentTile = tiles[row * BOARD_SIZE + col];
 
@@ -298,11 +292,22 @@ function handleTileClick(row, col) {
         // 첫 번째 타일 선택
         selectedTile = { row, col };
         currentTile.classList.add('selected');
+
+        // 특수 블록이면 햅틱/시각 효과 추가? (일단 선택됨 표시만)
     } else {
         const prevTile = tiles[selectedTile.row * BOARD_SIZE + selectedTile.col];
 
-        // 같은 타일 클릭 시 선택 해제
+        // 같은 타일 클릭 시
         if (selectedTile.row === row && selectedTile.col === col) {
+            // 특수 블록을 두 번 클릭하면 발동 (선택 해제 대신)
+            if (specialBoard[row][col]) {
+                prevTile.classList.remove('selected');
+                selectedTile = null;
+                activateSpecialBlock(row, col);
+                return;
+            }
+
+            // 일반 타일은 선택 해제
             prevTile.classList.remove('selected');
             selectedTile = null;
             return;
@@ -525,6 +530,10 @@ async function activateSpecialBlock(row, col) {
 async function swapTiles(row1, col1, row2, col2) {
     isProcessing = true;
 
+    // 특수 블록인지 확인 (스왑 전 위치 기준)
+    const isSpecial1 = specialBoard[row1][col1] !== null;
+    const isSpecial2 = specialBoard[row2][col2] !== null;
+
     // 배열에서 교환
     let temp = board[row1][col1];
     board[row1][col1] = board[row2][col2];
@@ -538,23 +547,57 @@ async function swapTiles(row1, col1, row2, col2) {
     renderBoard();
 
     // 매치 확인
-    const matches = findMatches();
+    let matchGroups = findMatches();
 
-    if (matches.length > 0) {
+    if (matchGroups.length > 0) {
+        // 1. 일반 매치가 있는 경우
         combo = 1;
         await processMatches();
+
+        // 2. 스왑된 특수 블록이 있다면, 매치 처리 후 발동 (콤보 효과)
+        // 주의: processMatches 실행 시 특수 블록이 이동하거나 터질 수도 있음.
+        // 하지만 여기선 "사용자가 의도적으로 스왑한 특수 블록" 효과를 주기 위해
+        // 해당 위치(스왑 후 위치)에 아직 특수 블록이 남아있다면 발동.
+
+        // 스왑 후 위치: (row1,col1) -> (row2,col2) / (row2,col2) -> (row1,col1)
+        // 원래 (row1,col1)에 있던게 (row2,col2)로 갔음.
+
+        if (isSpecial1) {
+            // 특수 블록 1이 아직 존재한다면 발동 (스왑 후 위치: row2, col2)
+            if (specialBoard[row2][col2]) {
+                await activateSpecialBlock(row2, col2);
+            }
+        }
+
+        if (isSpecial2) {
+            // 특수 블록 2가 아직 존재한다면 발동 (스왑 후 위치: row1, col1)
+            if (specialBoard[row1][col1]) {
+                await activateSpecialBlock(row1, col1);
+            }
+        }
+
     } else {
-        // 매치가 없으면 다시 교환
-        await delay(200);
-        temp = board[row2][col2];
-        board[row2][col2] = board[row1][col1];
-        board[row1][col1] = temp;
+        // 매치가 없는 경우
 
-        temp = specialBoard[row2][col2];
-        specialBoard[row2][col2] = specialBoard[row1][col1];
-        specialBoard[row1][col1] = temp;
+        // 특수 블록이 포함되어 있다면? -> 유효한 무브로 간주하고 즉시 발동 (Swap to Activate)
+        if (isSpecial1 || isSpecial2) {
+            if (isSpecial1) await activateSpecialBlock(row2, col2); // 1이 2위치로 감
+            if (isSpecial2) await activateSpecialBlock(row1, col1); // 2가 1위치로 감
 
-        renderBoard();
+            // 특수 블록 발동 처리 완료
+        } else {
+            // 매치도 없고 특수 블록도 없으면 원위치
+            await delay(200);
+            temp = board[row2][col2];
+            board[row2][col2] = board[row1][col1];
+            board[row1][col1] = temp;
+
+            temp = specialBoard[row2][col2];
+            specialBoard[row2][col2] = specialBoard[row1][col1];
+            specialBoard[row1][col1] = temp;
+
+            renderBoard();
+        }
     }
 
     // 가능한 수가 있는지 확인
