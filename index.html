@@ -42,7 +42,13 @@
                         <p>💫 <strong>4개 매치</strong> → 터치 시 랜덤 라인 삭제</p>
                         <p>⭐ <strong>5개 매치</strong> → 터치 시 같은 블록 전체 삭제</p>
                     </div>
+
+                    <div class="input-group">
+                        <input type="text" id="playerNameInput" placeholder="닉네임을 입력하세요" maxlength="8">
+                    </div>
+
                     <button class="btn-start" id="startBtn">게임 시작</button>
+                    <button class="btn-secondary" id="showLeaderboardBtn">🏆 랭킹 보기</button>
                 </div>
             </div>
 
@@ -52,7 +58,20 @@
                     <h2>⏱️ 시간 종료!</h2>
                     <p>최종 점수</p>
                     <div class="final-score" id="finalScore">0</div>
+                    <div id="newRecordMessage" class="hidden">🎉 신기록 달성! 🎉</div>
                     <button class="btn-start" id="restartBtn">다시 하기</button>
+                    <button class="btn-secondary" id="endShowLeaderboardBtn">🏆 랭킹 보기</button>
+                </div>
+            </div>
+
+            <!-- 리더보드 오버레이 -->
+            <div class="game-overlay hidden" id="leaderboardOverlay">
+                <div class="overlay-content leaderboard-content">
+                    <h2>🏆 명예의 전당</h2>
+                    <div class="leaderboard-list" id="leaderboardList">
+                        <div class="loading">불러오는 중...</div>
+                    </div>
+                    <button class="btn-secondary" id="closeLeaderboardBtn">닫기</button>
                 </div>
             </div>
         </main>
@@ -62,7 +81,7 @@
         </footer>
     </div>
 
-    <script src="game.js"></script>
+    <script type="module" src="game.js"></script>
 </body>
 
 </html>

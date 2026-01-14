@@ -1,3 +1,21 @@
+// Firebase 라이브러리 임포트 (CDN 사용)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, push, query, orderByChild, limitToLast, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+// Firebase 설정
+const firebaseConfig = {
+    apiKey: "AIzaSyAX0l8-8L3lPMWZvrEEEOCosAUAV5GVu2Y",
+    authDomain: "pangpang-28211.firebaseapp.com",
+    projectId: "pangpang-28211",
+    storageBucket: "pangpang-28211.firebasestorage.app",
+    messagingSenderId: "1094639744530",
+    appId: "1:1094639744530:web:bcee1b1fd9f9c40daf0acb"
+};
+
+// Firebase 초기화
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 // 게임 상수
 const BOARD_SIZE = 7;
 const TILE_TYPES = ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐨'];
@@ -19,6 +37,7 @@ let isProcessing = false;
 let gameStarted = false;
 let gameTimer = null;
 let timeRemaining = GAME_DURATION;
+let playerName = localStorage.getItem('lastPlayerName') || '';
 
 // 터치/스와이프 상태
 let touchStartX = 0;
@@ -37,6 +56,20 @@ const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
 const finalScore = document.getElementById('finalScore');
 
+// 리더보드/닉네임 관련 DOM
+const playerNameInput = document.getElementById('playerNameInput');
+const showLeaderboardBtn = document.getElementById('showLeaderboardBtn');
+const endShowLeaderboardBtn = document.getElementById('endShowLeaderboardBtn');
+const closeLeaderboardBtn = document.getElementById('closeLeaderboardBtn');
+const leaderboardOverlay = document.getElementById('leaderboardOverlay');
+const leaderboardList = document.getElementById('leaderboardList');
+const newRecordMessage = document.getElementById('newRecordMessage');
+
+// 닉네임 로드
+if (playerName) {
+    playerNameInput.value = playerName;
+}
+
 // 게임 초기화 (보드만 준비)
 function initGame() {
     board = [];
@@ -50,6 +83,7 @@ function initGame() {
     updateScore();
     updateCombo();
     updateTimer();
+    newRecordMessage.classList.add('hidden');
 
     // 보드 생성 (매치 없이)
     for (let row = 0; row < BOARD_SIZE; row++) {
@@ -66,9 +100,14 @@ function initGame() {
 
 // 게임 시작
 function startGame() {
+    playerName = playerNameInput.value.trim() || '이름없음';
+    localStorage.setItem('lastPlayerName', playerName);
+
     gameStarted = true;
     startOverlay.classList.add('hidden');
     endOverlay.classList.add('hidden');
+    leaderboardOverlay.classList.add('hidden');
+
     initGame();
     startTimer();
 }
@@ -101,7 +140,7 @@ function updateTimer() {
 }
 
 // 게임 종료
-function endGame() {
+async function endGame() {
     gameStarted = false;
     if (gameTimer) {
         clearInterval(gameTimer);
@@ -110,6 +149,90 @@ function endGame() {
 
     finalScore.textContent = score.toLocaleString();
     endOverlay.classList.remove('hidden');
+
+    // 점수 저장
+    await saveScore(playerName, score);
+}
+
+// Firebase: 점수 저장
+async function saveScore(name, score) {
+    if (score === 0) return; // 0점은 저장하지 않음
+
+    try {
+        const scoresRef = ref(db, 'scores');
+        await push(scoresRef, {
+            name: name,
+            score: score,
+            timestamp: Date.now()
+        });
+
+        // 간단한 신기록 이펙트 (실제 비교는 하지 않음)
+        if (score > 1000) {
+            newRecordMessage.classList.remove('hidden');
+        }
+    } catch (e) {
+        console.error("Error saving score: ", e);
+    }
+}
+
+// Firebase: 리더보드 불러오기
+async function loadLeaderboard() {
+    leaderboardList.innerHTML = '<div class="loading">불러오는 중...</div>';
+
+    try {
+        const scoresRef = ref(db, 'scores');
+        const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(50)); // 상위 50개
+
+        const snapshot = await get(topScoresQuery);
+
+        if (snapshot.exists()) {
+            const scores = [];
+            snapshot.forEach((childSnapshot) => {
+                scores.push(childSnapshot.val());
+            });
+
+            // 점수 내림차순 정렬
+            scores.sort((a, b) => b.score - a.score);
+
+            renderLeaderboard(scores);
+        } else {
+            leaderboardList.innerHTML = '<div class="loading">기록이 없습니다.</div>';
+        }
+    } catch (e) {
+        console.error("Error loading leaderboard: ", e);
+        leaderboardList.innerHTML = '<div class="loading">오류가 발생했습니다.</div>';
+    }
+}
+
+// 리더보드 렌더링
+function renderLeaderboard(scores) {
+    leaderboardList.innerHTML = '';
+
+    scores.forEach((entry, index) => {
+        const rank = index + 1;
+        const div = document.createElement('div');
+        div.className = `rank-item rank-${rank}`;
+
+        // 내 기록 강조 (이름으로 단순 비교)
+        if (entry.name === playerName && entry.score === score &&
+            (Date.now() - entry.timestamp) < 5000) { // 방금 등록한 기록
+            div.classList.add('my-rank');
+        }
+
+        div.innerHTML = `
+            <span class="rank-pos">${rank}</span>
+            <span class="rank-name">${escapeHtml(entry.name)}</span>
+            <span class="rank-score">${entry.score.toLocaleString()}</span>
+        `;
+        leaderboardList.appendChild(div);
+    });
+}
+
+// HTML 이스케이프 (XSS 방지)
+function escapeHtml(text) {
+    if (!text) return text;
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
 // 매치가 생기지 않는 랜덤 타일 생성
@@ -781,6 +904,26 @@ function delay(ms) {
 // 이벤트 리스너
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
+
+// 리더보드 이벤트 리스너
+showLeaderboardBtn.addEventListener('click', () => {
+    leaderboardOverlay.classList.remove('hidden');
+    loadLeaderboard();
+});
+
+endShowLeaderboardBtn.addEventListener('click', () => {
+    leaderboardOverlay.classList.remove('hidden');
+    loadLeaderboard();
+});
+
+closeLeaderboardBtn.addEventListener('click', () => {
+    leaderboardOverlay.classList.add('hidden');
+});
+
+// 엔터키 리스너
+playerNameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') startGame();
+});
 
 // 초기 보드 표시 (게임 시작 전)
 initGame();

@@ -124,6 +124,8 @@ body {
     border-radius: 16px;
     margin-bottom: 20px;
     position: relative;
+    max-width: 450px;
+    /* 오버레이 크기 제한 */
 }
 
 .game-board {
@@ -289,7 +291,8 @@ body {
 .overlay-content {
     text-align: center;
     color: #fff;
-    padding: 32px;
+    padding: 24px;
+    width: 100%;
 }
 
 .overlay-content h2 {
@@ -317,6 +320,32 @@ body {
     font-size: 0.9rem;
 }
 
+.input-group {
+    margin: 16px 0;
+}
+
+.input-group input {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 12px;
+    color: #fff;
+    font-size: 1.1rem;
+    text-align: center;
+    width: 80%;
+    outline: none;
+    transition: all 0.3s;
+}
+
+.input-group input:focus {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: #ffd700;
+}
+
+.input-group input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
 .final-score {
     font-size: 3rem;
     font-weight: bold;
@@ -335,7 +364,8 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    margin-top: 16px;
+    margin-top: 10px;
+    width: 80%;
 }
 
 .btn-start:hover {
@@ -345,6 +375,23 @@ body {
 
 .btn-start:active {
     transform: translateY(0);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 12px 24px;
+    font-size: 1rem;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+    width: 80%;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .game-footer {
@@ -421,4 +468,76 @@ body {
         opacity: 0;
         transform: scale(0);
     }
+}
+
+/* 리더보드 스타일 */
+.leaderboard-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 20px 0;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 10px;
+}
+
+.rank-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    align-items: center;
+}
+
+.rank-item:last-child {
+    border-bottom: none;
+}
+
+.rank-item.my-rank {
+    background: rgba(255, 215, 0, 0.2);
+    border-radius: 8px;
+    border-bottom: none;
+}
+
+.rank-pos {
+    width: 30px;
+    font-weight: bold;
+    color: #ffd700;
+}
+
+.rank-name {
+    flex: 1;
+    text-align: left;
+    margin: 0 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rank-score {
+    font-family: monospace;
+    font-size: 1.1rem;
+    color: #fff;
+}
+
+.rank-1 .rank-pos {
+    color: #FFD700;
+    font-size: 1.2rem;
+}
+
+.rank-2 .rank-pos {
+    color: #C0C0C0;
+    font-size: 1.2rem;
+}
+
+.rank-3 .rank-pos {
+    color: #CD7F32;
+    font-size: 1.2rem;
+}
+
+#newRecordMessage {
+    color: #ff6b6b;
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    animation: pulse 1s infinite;
 }
