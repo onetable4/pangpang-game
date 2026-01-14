@@ -95,15 +95,72 @@ function initGame() {
     renderBoard();
 }
 
+// 버튼 이벤트 리스너
+startBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('click', () => {
+    endOverlay.classList.add('hidden');
+    startOverlay.classList.remove('hidden');
+});
+
+// 도움말 버튼 로직
+const helpBtn = document.getElementById('helpBtn');
+const helpOverlay = document.getElementById('helpOverlay');
+const closeHelpBtn = document.getElementById('closeHelpBtn');
+
+helpBtn.addEventListener('click', () => {
+    helpOverlay.classList.remove('hidden');
+    // 애니메이션 초기화 (선택 사항)
+});
+
+closeHelpBtn.addEventListener('click', () => {
+    helpOverlay.classList.add('hidden');
+});
+
+// 리더보드 버튼 로직
+showLeaderboardBtn.addEventListener('click', () => {
+    leaderboardOverlay.classList.remove('hidden');
+    loadLeaderboard();
+});
+
+endShowLeaderboardBtn.addEventListener('click', () => {
+    leaderboardOverlay.classList.remove('hidden');
+    loadLeaderboard();
+});
+
+closeLeaderboardBtn.addEventListener('click', () => {
+    leaderboardOverlay.classList.add('hidden');
+});
+
 // 게임 시작
 function startGame() {
-    playerName = playerNameInput.value.trim() || '이름없음';
+    const name = playerNameInput.value.trim();
+
+    // 이름 검증
+    if (!name) {
+        playerNameInput.classList.add('input-error');
+        playerNameInput.focus();
+
+        // 흔들림 애니메이션 후 클래스 제거 (재실행 위해)
+        setTimeout(() => {
+            playerNameInput.classList.remove('input-error');
+        }, 400);
+
+        // 토스트 메시지 대신 placeholder 변경으로 알림
+        const originalPlaceholder = playerNameInput.placeholder;
+        playerNameInput.placeholder = "이름을 꼭 입력해주세요!";
+        setTimeout(() => playerNameInput.placeholder = originalPlaceholder, 2000);
+
+        return;
+    }
+
+    playerName = name;
     localStorage.setItem('lastPlayerName', playerName);
 
     gameStarted = true;
     startOverlay.classList.add('hidden');
     endOverlay.classList.add('hidden');
     leaderboardOverlay.classList.add('hidden');
+    helpOverlay.classList.add('hidden'); // 혹시 열려있다면 닫기
 
     initGame();
     startTimer();

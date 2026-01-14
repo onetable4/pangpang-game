@@ -37,19 +37,14 @@
             <div class="game-overlay" id="startOverlay">
                 <div class="overlay-content">
                     <h2>🎮 매치 퍼즐</h2>
-                    <p>3개 이상 같은 블록을 맞춰 점수를 획득하세요!</p>
-                    <div class="special-info">
-                        <p>💫 <strong>4개 매치</strong> → 터치 시 랜덤 라인 삭제</p>
-                        <p>💣 <strong>L/T 모양(5개)</strong> → 터치 시 3x3 범위 펑!</p>
-                        <p>⚡ <strong>5개 매치</strong> → 터치 시 무작위 동물 전체 삭제</p>
-                    </div>
-
                     <div class="input-group">
-                        <input type="text" id="playerNameInput" placeholder="닉네임을 입력하세요" maxlength="8">
+                        <input type="text" id="playerNameInput" placeholder="닉네임을 입력하세요" maxlength="10">
                     </div>
-
-                    <button class="btn-start" id="startBtn">게임 시작</button>
-                    <button class="btn-secondary" id="showLeaderboardBtn">🏆 랭킹 보기</button>
+                    <div class="btn-group">
+                        <button class="btn-start" id="startBtn">게임 시작</button>
+                        <button class="btn-secondary" id="showLeaderboardBtn">🏆 랭킹 보기</button>
+                        <button class="btn-icon" id="helpBtn" title="게임 설명">❓</button>
+                    </div>
                 </div>
             </div>
 
@@ -91,6 +86,37 @@
                         <div class="loading">불러오는 중...</div>
                     </div>
                     <button class="btn-secondary" id="closeLeaderboardBtn">닫기</button>
+                </div>
+            </div>
+
+            <!-- 도움말 오버레이 -->
+            <div class="game-overlay hidden help-overlay" id="helpOverlay">
+                <div class="overlay-content help-content">
+                    <h2>❓ 게임 설명</h2>
+                    <div class="help-grid">
+                        <div class="help-item">
+                            <span class="help-icon">🐶</span>
+                            <p>3개 매치<br>점수 획득</p>
+                        </div>
+                        <div class="help-item">
+                            <span class="help-icon">💎</span>
+                            <p>4개 매치<br>라인 삭제</p>
+                        </div>
+                        <div class="help-item">
+                            <span class="help-icon">💣</span>
+                            <p>L/T (5개)<br>3x3 폭발</p>
+                        </div>
+                        <div class="help-item">
+                            <span class="help-icon">⚡</span>
+                            <p>5개 매치<br>전체 삭제</p>
+                        </div>
+                    </div>
+
+                    <div class="help-tips">
+                        <p>💡 <strong>Tip</strong>: 특수 블록끼리 교환하면<br>즉시 발동하여 콤보 효과!</p>
+                    </div>
+
+                    <button class="btn-secondary" id="closeHelpBtn">닫기</button>
                 </div>
             </div>
         </main>
