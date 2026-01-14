@@ -319,10 +319,50 @@ body {
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
-.overlay-content p {
-    color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 8px;
-    font-size: 1rem;
+/* 도움말 오버레이 스타일 */
+.help-overlay .overlay-content {
+    max-width: 340px;
+    padding: 25px;
+}
+
+.help-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 20px 0;
+    text-align: left;
+}
+
+.help-row {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.help-icon-small {
+    font-size: 1.5rem;
+    min-width: 30px;
+    text-align: center;
+}
+
+.help-text {
+    font-size: 0.95rem;
+    color: #eee;
+    font-weight: 500;
+}
+
+.help-tips {
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    color: #ffd700;
 }
 
 .special-info {
@@ -372,18 +412,63 @@ body {
     margin: 16px 0;
 }
 
+/* 버튼 그룹 (80:20 비율) */
+.btn-group {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 10px;
+    /* 시작 버튼과 간격 */
+}
+
+/* 시작 버튼은 그룹 밖에서 단독으로 100% */
 .btn-start {
+    width: 100%;
+    margin-bottom: 0;
+    /* 그룹과의 간격은 group의 margin-top 처리가 나음 */
+    padding: 15px;
+    font-size: 1.2rem;
+    border-radius: 12px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
     color: white;
-    padding: 16px 48px;
-    font-size: 1.2rem;
-    border-radius: 50px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    margin-top: 10px;
-    width: 80%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    transition: transform 0.1s;
+}
+
+#showLeaderboardBtn {
+    flex: 8;
+    /* 랭킹 버튼 80% */
+    border-radius: 12px;
+    font-size: 1rem;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    cursor: pointer;
+}
+
+#helpBtn {
+    flex: 2;
+    /* 도움말 버튼 20% */
+    border-radius: 12px;
+    font-size: 1.2rem;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#showLeaderboardBtn:hover,
+#helpBtn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
 }
 
 .btn-start:hover {

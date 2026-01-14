@@ -40,10 +40,12 @@
                     <div class="input-group">
                         <input type="text" id="playerNameInput" placeholder="닉네임을 입력하세요" maxlength="10">
                     </div>
+
+                    <button class="btn-start" id="startBtn">게임 시작</button>
+
                     <div class="btn-group">
-                        <button class="btn-start" id="startBtn">게임 시작</button>
                         <button class="btn-secondary" id="showLeaderboardBtn">🏆 랭킹 보기</button>
-                        <button class="btn-icon" id="helpBtn" title="게임 설명">❓</button>
+                        <button class="btn-secondary" id="helpBtn">❓</button>
                     </div>
                 </div>
             </div>
@@ -93,22 +95,22 @@
             <div class="game-overlay hidden help-overlay" id="helpOverlay">
                 <div class="overlay-content help-content">
                     <h2>❓ 게임 설명</h2>
-                    <div class="help-grid">
-                        <div class="help-item">
-                            <span class="help-icon">🐶</span>
-                            <p>3개 매치<br>점수 획득</p>
+                    <div class="help-list">
+                        <div class="help-row">
+                            <span class="help-icon-small">🐶</span>
+                            <span class="help-text">3개 매치 : 점수 획득</span>
                         </div>
-                        <div class="help-item">
-                            <span class="help-icon">💎</span>
-                            <p>4개 매치<br>라인 삭제</p>
+                        <div class="help-row">
+                            <span class="help-icon-small">💎</span>
+                            <span class="help-text">4개 매치 : 랜덤 라인 삭제</span>
                         </div>
-                        <div class="help-item">
-                            <span class="help-icon">💣</span>
-                            <p>L/T (5개)<br>3x3 폭발</p>
+                        <div class="help-row">
+                            <span class="help-icon-small">💣</span>
+                            <span class="help-text">L/T (5개) : 주변 3x3 폭발</span>
                         </div>
-                        <div class="help-item">
-                            <span class="help-icon">⚡</span>
-                            <p>5개 매치<br>전체 삭제</p>
+                        <div class="help-row">
+                            <span class="help-icon-small">⚡</span>
+                            <span class="help-text">5개 매치 : 같은 동물 전체 삭제</span>
                         </div>
                     </div>
 
