@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>애니팡 스타일 퍼즐 게임</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <header class="game-header">
+            <h1>🎮 매치 퍼즐</h1>
+            <div class="score-board">
+                <div class="score-item">
+                    <span class="score-label">점수</span>
+                    <span class="score-value" id="score">0</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">콤보</span>
+                    <span class="score-value combo" id="combo">x1</span>
+                </div>
+            </div>
+        </header>
+        
+        <main class="game-board-wrapper">
+            <div class="game-board" id="gameBoard"></div>
+        </main>
+        
+        <footer class="game-footer">
+            <button class="btn-restart" id="restartBtn">🔄 새 게임</button>
+            <p class="hint">블록을 클릭해서 서로 바꾸세요!</p>
+        </footer>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>
