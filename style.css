@@ -269,6 +269,24 @@ body {
     }
 }
 
+.tile.special-bomb {
+    background: radial-gradient(circle, #ff4444, #cc0000 60%, #000);
+    animation: pulse-bomb 1s ease infinite alternate;
+    border: 2px solid #ffcc00;
+}
+
+@keyframes pulse-bomb {
+    from {
+        transform: scale(0.95);
+        box-shadow: 0 0 5px #ff0000;
+    }
+
+    to {
+        transform: scale(1.05);
+        box-shadow: 0 0 15px #ff4444;
+    }
+}
+
 /* 오버레이 스타일 */
 .game-overlay {
     position: absolute;
