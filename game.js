@@ -408,6 +408,9 @@ function getRandomTileWithoutMatch(row, col) {
     return availableTypes[Math.floor(Math.random() * availableTypes.length)];
 }
 
+// 특수 블록 오작동 방지를 위한 플레이스홀더
+const SPECIAL_PLACEHOLDER = '💎';
+
 // 보드 렌더링
 function renderBoard() {
     gameBoard.innerHTML = '';
@@ -417,8 +420,10 @@ function renderBoard() {
             const tile = document.createElement('div');
             tile.className = 'tile';
 
-            // 기본 동물 이모지
-            tile.textContent = board[row][col];
+            // 기본 동물 이모지 (플레이스홀더가 아닐 때만 표시)
+            if (board[row][col] !== SPECIAL_PLACEHOLDER) {
+                tile.textContent = board[row][col];
+            }
 
             tile.dataset.row = row;
             tile.dataset.col = col;
@@ -442,6 +447,7 @@ function renderBoard() {
 
             // 클릭 이벤트 (데스크톱)
             tile.addEventListener('click', () => handleTileClick(row, col));
+
 
             // 터치 이벤트 (모바일 스와이프)
             tile.addEventListener('touchstart', (e) => handleTouchStart(e, row, col), { passive: true });
@@ -900,7 +906,9 @@ function findMatches() {
     for (let row = 0; row < BOARD_SIZE; row++) {
         let col = 0;
         while (col < BOARD_SIZE - 2) {
+            // 특수 블록 플레이스홀더는 매치 대상이 아님 (동물이 아니므로)
             if (board[row][col] &&
+                board[row][col] !== SPECIAL_PLACEHOLDER &&
                 board[row][col] === board[row][col + 1] &&
                 board[row][col] === board[row][col + 2]) {
 
@@ -910,15 +918,6 @@ function findMatches() {
                     matchTiles.push({ row, col: k });
                     k++;
                 }
-
-                // 특수 블록 제외 (이미 특수 블록이면 매치에 포함 안 됨 - 로직상)
-                // 하지만 현재 로직은 특수블록도 글자(🐶 등)가 아니라 아이콘(💎)이므로
-                // 아이콘끼리는 매치 안 됨 (서로 다르니까).
-                // 혹시 같은 아이콘 3개가 모이면? -> TILE_TYPES에 없으므로 상관없지만 안전장치 필요?
-                // 현재 코드는 board 값이 같으면 매치됨. 아이콘끼리 3개 모이면 터짐. (의도된 것일 수도 아닐 수도)
-                // 일단 아이콘 생성 시 board에 아이콘이 들어가므로, 
-                // 아이콘 매치를 막으려면 체크 필요.
-                // 일단 둡니다 (아이콘 매치도 재밌는 요소일 수 있음, 또는 희박함)
 
                 horizontalMatches.push({
                     id: `h-${row}-${col}`,
@@ -938,6 +937,7 @@ function findMatches() {
         let row = 0;
         while (row < BOARD_SIZE - 2) {
             if (board[row][col] &&
+                board[row][col] !== SPECIAL_PLACEHOLDER &&
                 board[row][col] === board[row + 1][col] &&
                 board[row][col] === board[row + 2][col]) {
 
@@ -1106,8 +1106,8 @@ async function processMatches(lastSwappedTile = null) {
         // 특수 블록 생성 (매치 결과로 생성되는 새로운 특수 블록)
         if (specialType) {
             // 해당 위치는 비워뒀었음.
-            // 기존 타일 색상 중 하나로 복구하고 특수 블록 할당
-            board[targetRow][targetCol] = TILE_TYPES[Math.floor(Math.random() * TILE_TYPES.length)];
+            // 플레이스홀더를 할당하여 일반 매치에 포함되지 않도록 함
+            board[targetRow][targetCol] = SPECIAL_PLACEHOLDER;
             specialBoard[targetRow][targetCol] = specialType;
         }
     }
@@ -1163,7 +1163,7 @@ async function fillBoard() {
     for (let col = 0; col < BOARD_SIZE; col++) {
         for (let row = 0; row < BOARD_SIZE; row++) {
             if (board[row][col] === null) {
-                board[row][col] = TILE_TYPES[Math.floor(Math.random() * TILE_TYPES.length)];
+                board[row][col] = getRandomTile();
                 specialBoard[row][col] = null;
             }
         }
