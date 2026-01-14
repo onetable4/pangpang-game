@@ -1080,24 +1080,30 @@ async function processMatches(lastSwappedTile = null) {
             targetCol = group.tiles[Math.floor(group.tiles.length / 2)].col;
         }
 
-        // 타일 제거 처리
-        group.tiles.forEach(t => {
-            // 특수 블록 생성 위치는 데이터만 지우고 나중에 채움 (시각적으로는 유지되어야 자연스러움)
-
-            const tileElement = document.querySelector(`.tile[data-row="${t.row}"][data-col="${t.col}"]`);
-            if (tileElement) {
-                tileElement.classList.add('matched');
+        // 타일 제거 처리 및 특수 블록 발동
+        const promises = group.tiles.map(async (t) => {
+            // 특수 블록인지 확인
+            if (specialBoard[t.row][t.col]) {
+                // 매치에 포함된 특수 블록은 즉시 발동
+                await activateSpecialBlock(t.row, t.col);
+            } else {
+                // 일반 타일 제거 효과
+                const tileElement = document.querySelector(`.tile[data-row="${t.row}"][data-col="${t.col}"]`);
+                if (tileElement) {
+                    tileElement.classList.add('matched');
+                }
+                board[t.row][t.col] = null;
+                specialBoard[t.row][t.col] = null;
             }
-
-            // 보드 데이터 업데이트
-            board[t.row][t.col] = null;
-            specialBoard[t.row][t.col] = null;
         });
+
+        // 모든 타일 처리 대기 (특수 블록 발동 등)
+        await Promise.all(promises);
 
         // 애니메이션 대기
         await delay(250);
 
-        // 특수 블록 생성
+        // 특수 블록 생성 (매치 결과로 생성되는 새로운 특수 블록)
         if (specialType) {
             // 해당 위치는 비워뒀었음.
             // 기존 타일 색상 중 하나로 복구하고 특수 블록 할당
@@ -1109,7 +1115,7 @@ async function processMatches(lastSwappedTile = null) {
     updateScore();
     // 점수 업데이트 딜레이 제거 (즉시 반응)
 
-    // 타일 떨어뜨리고 채우기
+    // 타일 떨어뜨리고 채우기 (activateSpecialBlock 내부에서도 호출되지만, 여기서도 다시 확인)
     await dropTiles();
     await fillBoard();
     renderBoard();
