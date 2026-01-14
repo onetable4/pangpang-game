@@ -1005,58 +1005,18 @@ function findMatches() {
 }
 
 // 매치 처리 및 특수 블록 생성
+// 매치 처리 및 특수 블록 생성
 async function processMatches(lastSwappedTile = null) {
-    const matches = findMatches();
-    if (matches.length === 0) return;
-
-    // 매치 그룹화 로직 개선 (교차점 처리)
-    let groups = [];
-    const visited = new Set(); // 'r,c' 문자열 저장
-
-    // BFS로 연결된 매치 타일들을 하나의 그룹으로 묶음
-    for (const match of matches) {
-        for (const tile of match.tiles) { // match.tiles는 {row, col} 배열
-            const key = `${tile.row},${tile.col}`;
-            if (visited.has(key)) continue;
-
-            const group = {
-                tiles: [],
-                types: new Set(), // 'horizontal' or 'vertical'
-                count: 0
-            };
-
-            const queue = [tile];
-            visited.add(key);
-
-            while (queue.length > 0) {
-                const current = queue.shift();
-                group.tiles.push(current);
-
-                // 현재 타일이 포함된 모든 매치를 찾아서 큐에 추가
-                for (const m of matches) {
-                    const isPartOfMatch = m.tiles.some(t => t.row === current.row && t.col === current.col);
-                    if (isPartOfMatch) {
-                        group.types.add(m.type); // horizontal or vertical
-
-                        for (const t of m.tiles) {
-                            const k = `${t.row},${t.col}`;
-                            if (!visited.has(k)) {
-                                visited.add(k);
-                                queue.push(t);
-                            }
-                        }
-                    }
-                }
-            }
-            group.count = group.tiles.length;
-            groups.push(group);
-        }
-    }
+    // findMatches가 이미 그룹화된 결과를 반환함
+    const groups = findMatches();
+    if (groups.length === 0) return;
 
     // 각 그룹별 점수 계산 및 특수 블록 생성 확인
     for (const group of groups) {
+        const tileCount = group.tiles.length;
+
         // 점수
-        const matchScore = group.count * 10 * combo; // 기본 점수
+        const matchScore = tileCount * 10 * combo; // 기본 점수
         score += matchScore;
         showScorePopup(matchScore);
 
@@ -1065,16 +1025,16 @@ async function processMatches(lastSwappedTile = null) {
 
         // 우선순위: Bomb > Color > Line
         // 1. Bomb (T/L) - 가로/세로 매치가 섞여있고 총 5개 이상
-        // (가로3 + 세로3 = 5개 타일. 교차점 1개)
-        if (group.types.has('horizontal') && group.types.has('vertical') && group.count >= 5) {
+        // group.types는 Set {'horizontal', 'vertical'}
+        if (group.types.has('horizontal') && group.types.has('vertical') && tileCount >= 5) {
             specialType = SPECIAL_TYPES.BOMB;
         }
         // 2. Color (5개 이상 직선)
-        else if (group.count >= 5) {
+        else if (tileCount >= 5) {
             specialType = SPECIAL_TYPES.COLOR;
         }
         // 3. Line (4개 직선)
-        else if (group.count === 4) {
+        else if (tileCount === 4) {
             if (group.types.has('horizontal')) {
                 specialType = SPECIAL_TYPES.H_LINE;
             } else {
@@ -1132,22 +1092,27 @@ async function processMatches(lastSwappedTile = null) {
     updateScore();
     await delay(300);
 
-    // 타일 떨어뜨리기 및 채우기
+    // 타일 떨어뜨리고 채우기
     await dropTiles();
     await fillBoard();
     renderBoard();
 
     await delay(300);
 
-    // 연쇄 매치 (재귀 호출 시 lastSwappedTile은 null로 전달)
-    const newMatches = findMatches();
-    if (newMatches.length > 0) {
+    // 연쇄 매치 확인 (재귀 아님, 루프 혹은 호출)
+    // processMatches는 async이므로, 현재 작업 끝난 후 다시 확인
+    // 근데 findMatches가 0이면 종료하므로 재귀 호출해도 됨.
+    // 하지만 무한 루프 방지 위해... 여기서 호출?
+    // swapTiles에서 processMatches 호출 후 다시 확인 구조가 있음.
+    // 여기서는 "연쇄"를 위해 자체적으로 다시 호출하는 게 맞음.
+    // 단, lastSwappedTile 정보는 연쇄에서는 유효하지 않음 (랜덤 위치 or 중앙).
+
+    // 연쇄 처리를 위해 다시 호출
+    const nextMatches = findMatches();
+    if (nextMatches.length > 0) {
         combo++;
         updateCombo();
-        await processMatches(null);
-    } else {
-        combo = 1;
-        updateCombo();
+        await processMatches(null); // 연쇄는 스왑 주체 없음
     }
 }
 
