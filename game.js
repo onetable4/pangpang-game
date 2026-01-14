@@ -359,18 +359,18 @@ function renderLeaderboard(scores) {
             div.classList.add('my-rank');
         }
 
-        const msgIcon = entry.message ? ' 💬' : '';
+        // 툴팁 속성 추가 (메시지가 있는 경우)
+        if (entry.message) {
+            div.setAttribute('data-tooltip', `"${entry.message}"`);
+        }
+
+        const msgIcon = entry.message ? '<span class="msg-icon">💬</span>' : '';
 
         div.innerHTML = `
             <span class="rank-pos">${rank}</span>
             <span class="rank-name">${escapeHtml(entry.name)}${msgIcon}</span>
             <span class="rank-score">${entry.score.toLocaleString()}</span>
         `;
-
-        // 클릭 시 메시지 토스트? (추후 개선 안)
-        if (entry.message) {
-            div.title = entry.message; // 툴팁으로 표시
-        }
 
         leaderboardList.appendChild(div);
     });
@@ -550,13 +550,15 @@ function handleTouchEnd(e, row, col) {
 
 // 특수 블록 아이콘
 const SPECIAL_ICONS = {
-    LINE: '💎',   // 4매치
+    H_LINE: '↔️', // 가로 4매치
+    V_LINE: '↕️', // 세로 4매치
     COLOR: '⚡',  // 5매치 line
     BOMB: '💣'    // T/L 매치
 };
 
 const SPECIAL_TYPES = {
-    LINE: 'special-line',     // 4매치: 랜덤 방향 라인 삭제
+    H_LINE: 'special-h-line', // 가로 라인 삭제
+    V_LINE: 'special-v-line', // 세로 라인 삭제
     COLOR: 'special-color',   // 5매치: 같은 색 전체 삭제
     BOMB: 'special-bomb'      // T/L 매치: 3x3 폭발
 };
@@ -568,25 +570,16 @@ async function activateSpecialBlock(row, col) {
     const specialType = specialBoard[row][col];
     const tilesToClear = [];
 
-    if (specialType === SPECIAL_TYPES.LINE) {
-        // 랜덤하게 가로/세로/대각선 중 하나 선택 (대각선 삭제됨 요청에 따라 가로/세로만? 아님 기존 기능 유지?)
-        // 사용자 요청: "대각선 판정 제외" -> 매치 판정에서 제외. 라인 삭제는 유지가능하나 "랜덤 라인 삭제"라고 했으므로 가로/세로만 남기는게 일관적일듯.
-        // 하지만 기존 Line 기능은 유지하되 판정만 가로/세로로 바뀜. 
-        // 4개 매치 효과는 "랜덤 라인 삭제" -> 가로/세로 
-
-        const directions = ['horizontal', 'vertical'];
-        const randomDir = directions[Math.floor(Math.random() * directions.length)];
-
-        if (randomDir === 'horizontal') {
-            for (let c = 0; c < BOARD_SIZE; c++) {
-                tilesToClear.push({ row, col: c });
-            }
-        } else {
-            for (let r = 0; r < BOARD_SIZE; r++) {
-                tilesToClear.push({ row: r, col });
-            }
+    if (specialType === SPECIAL_TYPES.H_LINE) {
+        // 가로 라인 삭제
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            tilesToClear.push({ row, col: c });
         }
-
+    } else if (specialType === SPECIAL_TYPES.V_LINE) {
+        // 세로 라인 삭제
+        for (let r = 0; r < BOARD_SIZE; r++) {
+            tilesToClear.push({ row: r, col });
+        }
     } else if (specialType === SPECIAL_TYPES.BOMB) {
         // 3x3 폭발
         for (let r = row - 1; r <= row + 1; r++) {
@@ -627,7 +620,7 @@ async function activateSpecialBlock(row, col) {
         }
     });
 
-    const clearScore = uniqueTiles.length * 30 * combo; // 폭탄 점수 상향
+    const clearScore = uniqueTiles.length * 40 * combo; // 점수 상향
     score += clearScore;
     updateScore();
     showScorePopup(clearScore);
@@ -690,59 +683,91 @@ async function swapTiles(row1, col1, row2, col2) {
     // 특수 블록도 교환
     temp = specialBoard[row1][col1];
     specialBoard[row1][col1] = specialBoard[row2][col2];
-    specialBoard[row2][col2] = temp;
+    specialBoard[sourceRow][sourceCol] = targetSpecial;
+    specialBoard[targetRow][targetCol] = sourceSpecial;
 
     renderBoard();
 
     // 매치 확인
-    let matchGroups = findMatches();
-
-    if (matchGroups.length > 0) {
-        // 1. 일반 매치가 있는 경우
+    const matches = findMatches();
+    if (matches.length > 0) {
+        // 유효한 스왑
         combo = 1;
-        await processMatches();
+        updateCombo();
 
-        // 2. 스왑된 특수 블록이 있다면, 매치 처리 후 발동 (콤보 효과)
-        // 주의: processMatches 실행 시 특수 블록이 이동하거나 터질 수도 있음.
-        // 하지만 여기선 "사용자가 의도적으로 스왑한 특수 블록" 효과를 주기 위해
-        // 해당 위치(스왑 후 위치)에 아직 특수 블록이 남아있다면 발동.
+        // 스왑으로 인한 매치이므로, 스왑된 타일 위치를 기준점으로 전달
+        // 사용자가 드래그하여 놓은 위치(targetRow, targetCol)를 기준으로 함
+        // source와 target 중 매치에 포함된 녀석이 기준이 되어야 함.
+        // 하지만 직관적으로 "내가 놓은 곳"에 생기는 게 좋음.
+        const lastSwapped = { row: targetRow, col: targetCol };
 
-        // 스왑 후 위치: (row1,col1) -> (row2,col2) / (row2,col2) -> (row1,col1)
-        // 원래 (row1,col1)에 있던게 (row2,col2)로 갔음.
+        // 특수 블록 발동 체크 (매치된 타일에 특수 블록이 섞여있으면 발동)
+        let specialActivated = false;
 
-        if (isSpecial1) {
-            // 특수 블록 1이 아직 존재한다면 발동 (스왑 후 위치: row2, col2)
-            if (specialBoard[row2][col2]) {
-                await activateSpecialBlock(row2, col2);
-            }
+        // 매치된 타일들 수집
+        const allMatchedTiles = new Set();
+        matches.forEach(m => m.tiles.forEach(t => allMatchedTiles.add(`${t.row},${t.col}`)));
+
+        // 특수 블록이 매치에 포함되어 있다면 발동
+        /* 
+           기존 로직: 매치 처리 후 특수 블록 발동? 
+           개선 로직: 매치 처리 과정에서 특수 블록이 터지면 그 효과도 같이 처리.
+           processMatches 내부에서 처리하므로 여기서는 호출만 함.
+        */
+
+        // 스왑한 두 타일 중 특수 블록이 있다면? 
+        // 콤보 규칙: "스왑 + 매치 + 특수 블록" -> 특수 블록 효과 발동
+        if (specialBoard[targetRow][targetCol]) {
+            await activateSpecialBlock(targetRow, targetCol);
+            specialActivated = true;
+        }
+        if (specialBoard[sourceRow][sourceCol]) {
+            await activateSpecialBlock(sourceRow, sourceCol);
+            specialActivated = true;
         }
 
-        if (isSpecial2) {
-            // 특수 블록 2가 아직 존재한다면 발동 (스왑 후 위치: row1, col1)
-            if (specialBoard[row1][col1]) {
-                await activateSpecialBlock(row1, col1);
-            }
+        // 특수 블록이 발동되지 않았다면 일반 매치 처리
+        if (!specialActivated) {
+            await processMatches(lastSwapped);
+        } else {
+            // 특수 블록 발동 후 빈자리 채우고 다시 매치 확인 로직은 activateSpecialBlock 내부에 있음
+            // 하지만 여기서도 보장해야 함.
         }
 
     } else {
-        // 매치가 없는 경우
+        // 매치 안됨 -> 원위치 (단, 특수 블록 스왑은 예외)
+        if (specialBoard[sourceRow][sourceCol] || specialBoard[targetRow][targetCol]) {
+            // 특수 블록 스왑 (매치 없어도 발동 = Swap to Activate)
+            // 둘 다 특수 블록이면 둘 다 발동
+            if (specialBoard[sourceRow][sourceCol]) await activateSpecialBlock(sourceRow, sourceCol);
+            // 타일이 달라질 수 있으므로 다시 확인 (이미 터졌을 수도)
+            // activateSpecialBlock 내부에서 처리되므로 순차 호출 시 주의.
+            // 사실 하나 터지면 보드가 변하므로 두 번째는 위치가 안 맞을 수 있음.
+            // 하지만 스왑 직후이므로 인접해있음. 
+            // 로직 단순화: 타겟 위치의 특수 블록 발동 (내가 드래그해서 놓은 놈)
+            // 소스 위치도 특수 블록이면? -> 보통 둘 중 하나만 움직임.
+            // 둘 다 특수 블록끼리 스왑이면 -> 콤보 효과 (이미 activate 로직에 구현 가능하지만 여기선 단순 발동)
 
-        // 특수 블록이 포함되어 있다면? -> 유효한 무브로 간주하고 즉시 발동 (Swap to Activate)
-        if (isSpecial1 || isSpecial2) {
-            if (isSpecial1) await activateSpecialBlock(row2, col2); // 1이 2위치로 감
-            if (isSpecial2) await activateSpecialBlock(row1, col1); // 2가 1위치로 감
+            if (specialBoard[targetRow][targetCol]) await activateSpecialBlock(targetRow, targetCol);
 
-            // 특수 블록 발동 처리 완료
         } else {
-            // 매치도 없고 특수 블록도 없으면 원위치
+            // 일반 타일끼리 매치 실패 -> 원위치
             await delay(200);
-            temp = board[row2][col2];
-            board[row2][col2] = board[row1][col1];
-            board[row1][col1] = temp;
 
-            temp = specialBoard[row2][col2];
-            specialBoard[row2][col2] = specialBoard[row1][col1];
-            specialBoard[row1][col1] = temp;
+            // 다시 돌려놓기 애니메이션
+            const tile1 = document.querySelector(`.tile[data-row="${sourceRow}"][data-col="${sourceCol}"]`);
+            const tile2 = document.querySelector(`.tile[data-row="${targetRow}"][data-col="${targetCol}"]`);
+
+            if (tile1) tile1.style.transform = `translate(${(targetCol - sourceCol) * 100}%, ${(targetRow - sourceRow) * 100}%)`;
+            if (tile2) tile2.style.transform = `translate(${(sourceCol - targetCol) * 100}%, ${(sourceRow - targetRow) * 100}%)`;
+
+            await delay(300);
+
+            // 데이터 원복
+            board[sourceRow][sourceCol] = sourceType;
+            board[targetRow][targetCol] = targetType;
+            specialBoard[sourceRow][sourceCol] = sourceSpecial;
+            specialBoard[targetRow][targetCol] = targetSpecial;
 
             renderBoard();
         }
@@ -969,117 +994,151 @@ function findMatches() {
     return matchGroups;
 }
 
-// 매치 처리
-async function processMatches() {
-    let matchGroups = findMatches();
+// 매치 처리 및 특수 블록 생성
+async function processMatches(lastSwappedTile = null) {
+    const matches = findMatches();
+    if (matches.length === 0) return;
 
-    while (matchGroups.length > 0) {
-        const allTilesToClear = new Set();
-        const specialBlocksToCreate = [];
+    // 매치 그룹화 로직 개선 (교차점 처리)
+    let groups = [];
+    const visited = new Set(); // 'r,c' 문자열 저장
 
-        matchGroups.forEach(group => {
-            // 그룹의 중앙 타일 찾기 (대략적인)
-            const centerIdx = Math.floor(group.tiles.length / 2);
-            let centerTile = group.tiles[centerIdx];
+    // BFS로 연결된 매치 타일들을 하나의 그룹으로 묶음
+    for (const match of matches) {
+        for (const tile of match.tiles) { // match.tiles는 {row, col} 배열
+            const key = `${tile.row},${tile.col}`;
+            if (visited.has(key)) continue;
 
-            // 교차점(T/L)이 있다면 교차점을 우선 center로
-            // (가로/세로 모두에 속하는 타일 찾기)
-            // 이를 위해 상세 분석... 간단히 구현: 그룹 내 타일 중 가장 연결 많이 된 타일?
-            // 그냥 임의의 중앙값이면 충분.
+            const group = {
+                tiles: [],
+                types: new Set(), // 'horizontal' or 'vertical'
+                count: 0
+            };
 
-            // 특수 블록 결정 로직
-            let newSpecialType = null;
+            const queue = [tile];
+            visited.add(key);
 
-            // 1. 5개 이상 직선 -> COLOR (⚡)
-            if (group.maxLength >= 5) {
-                newSpecialType = SPECIAL_TYPES.COLOR;
+            while (queue.length > 0) {
+                const current = queue.shift();
+                group.tiles.push(current);
+
+                // 현재 타일이 포함된 모든 매치를 찾아서 큐에 추가
+                for (const m of matches) {
+                    const isPartOfMatch = m.tiles.some(t => t.row === current.row && t.col === current.col);
+                    if (isPartOfMatch) {
+                        group.types.add(m.type); // horizontal or vertical
+
+                        for (const t of m.tiles) {
+                            const k = `${t.row},${t.col}`;
+                            if (!visited.has(k)) {
+                                visited.add(k);
+                                queue.push(t);
+                            }
+                        }
+                    }
+                }
             }
-            // 2. 교차 매치 (T/L) (가로&세로 포함 + 총 타일 5개 이상) -> BOMB (💣)
-            else if (group.types.size >= 2 && group.tiles.length >= 5) {
-                newSpecialType = SPECIAL_TYPES.BOMB;
-
-                // 교차점을 center로 설정하기 위해 노력
-                // (가단한 방법: 2개 이상의 매치에 포함된 타일 찾기)
-                // 하지만 여기선 group으로 뭉쳐져서 원본 매치 정보가 희석됨.
-                // 다시 찾기 번거로우니 그냥 중간값 씁니다.
-                // 정밀하게 하려면 findMatches에서 교차점 정보를 남겨야 함. 
-                // "가로/세로 모두 포함" 조건이 T/L임.
-            }
-            // 3. 4개 직선 -> LINE (💎)
-            else if (group.maxLength === 4) {
-                newSpecialType = SPECIAL_TYPES.LINE;
-            }
-
-            if (newSpecialType) {
-                specialBlocksToCreate.push({
-                    row: centerTile.row,
-                    col: centerTile.col,
-                    type: newSpecialType
-                });
-            }
-
-            group.tiles.forEach(tile => {
-                allTilesToClear.add(`${tile.row},${tile.col}`);
-            });
-        });
-
-        // 매치된 타일 애니메이션
-        const tiles = document.querySelectorAll('.tile');
-        allTilesToClear.forEach(pos => {
-            const [row, col] = pos.split(',').map(Number);
-            const tile = tiles[row * BOARD_SIZE + col];
-            if (tile) tile.classList.add('matched');
-        });
-
-        // 점수 계산
-        const matchScore = allTilesToClear.size * 10 * combo;
-        score += matchScore;
-        updateScore();
-        showScorePopup(matchScore);
-
-        await delay(400);
-
-        // 특수 블록 위치 제외하고 삭제
-        const specialPositions = new Set(
-            specialBlocksToCreate.map(s => `${s.row},${s.col}`)
-        );
-
-        allTilesToClear.forEach(pos => {
-            const [row, col] = pos.split(',').map(Number);
-            if (!specialPositions.has(pos)) {
-                board[row][col] = null;
-                specialBoard[row][col] = null;
-            }
-        });
-
-        // 특수 블록 생성
-        specialBlocksToCreate.forEach(special => {
-            specialBoard[special.row][special.col] = special.type;
-            if (special.type === SPECIAL_TYPES.LINE) {
-                board[special.row][special.col] = SPECIAL_ICONS.LINE;
-            } else if (special.type === SPECIAL_TYPES.COLOR) {
-                board[special.row][special.col] = SPECIAL_ICONS.COLOR;
-            } else if (special.type === SPECIAL_TYPES.BOMB) {
-                board[special.row][special.col] = SPECIAL_ICONS.BOMB;
-            }
-        });
-
-        // 타일 떨어뜨리기 및 채우기
-        await dropTiles();
-        await fillBoard();
-        renderBoard();
-
-        combo++;
-        updateCombo();
-
-        await delay(300);
-
-        // 연쇄 매치 확인
-        matchGroups = findMatches();
+            group.count = group.tiles.length;
+            groups.push(group);
+        }
     }
 
-    combo = 1;
-    updateCombo();
+    // 각 그룹별 점수 계산 및 특수 블록 생성 확인
+    for (const group of groups) {
+        // 점수
+        const matchScore = group.count * 10 * combo; // 기본 점수
+        score += matchScore;
+        showScorePopup(matchScore);
+
+        // 특수 블록 생성 여부 판단
+        let specialType = null;
+
+        // 우선순위: Bomb > Color > Line
+        // 1. Bomb (T/L) - 가로/세로 매치가 섞여있고 총 5개 이상
+        // (가로3 + 세로3 = 5개 타일. 교차점 1개)
+        if (group.types.has('horizontal') && group.types.has('vertical') && group.count >= 5) {
+            specialType = SPECIAL_TYPES.BOMB;
+        }
+        // 2. Color (5개 이상 직선)
+        else if (group.count >= 5) {
+            specialType = SPECIAL_TYPES.COLOR;
+        }
+        // 3. Line (4개 직선)
+        else if (group.count === 4) {
+            if (group.types.has('horizontal')) {
+                specialType = SPECIAL_TYPES.H_LINE;
+            } else {
+                specialType = SPECIAL_TYPES.V_LINE;
+            }
+        }
+
+        // 특수 블록 생성 위치 결정
+        let targetRow = group.tiles[0].row;
+        let targetCol = group.tiles[0].col;
+
+        // 1. 마지막 스왑한 타일이 그룹 내에 있으면 그 위치 우선
+        if (lastSwappedTile) {
+            const inGroup = group.tiles.some(t => t.row === lastSwappedTile.row && t.col === lastSwappedTile.col);
+            if (inGroup) {
+                targetRow = lastSwappedTile.row;
+                targetCol = lastSwappedTile.col;
+            } else {
+                // 스왑 위치가 없으면 중앙값
+                targetRow = group.tiles[Math.floor(group.tiles.length / 2)].row;
+                targetCol = group.tiles[Math.floor(group.tiles.length / 2)].col;
+            }
+        } else {
+            // 스왑 정보 없으면 중앙값
+            targetRow = group.tiles[Math.floor(group.tiles.length / 2)].row;
+            targetCol = group.tiles[Math.floor(group.tiles.length / 2)].col;
+        }
+
+        // 타일 제거 처리
+        group.tiles.forEach(t => {
+            // 특수 블록 생성 위치는 데이터만 지우고 나중에 채움 (시각적으로는 유지되어야 자연스러움)
+
+            const tileElement = document.querySelector(`.tile[data-row="${t.row}"][data-col="${t.col}"]`);
+            if (tileElement) {
+                tileElement.classList.add('matched');
+            }
+
+            // 보드 데이터 업데이트
+            board[t.row][t.col] = null;
+            specialBoard[t.row][t.col] = null;
+        });
+
+        // 애니메이션 대기
+        await delay(300);
+
+        // 특수 블록 생성
+        if (specialType) {
+            // 해당 위치는 비워뒀었음.
+            // 기존 타일 색상 중 하나로 복구하고 특수 블록 할당
+            board[targetRow][targetCol] = TILE_TYPES[Math.floor(Math.random() * TILE_TYPES.length)];
+            specialBoard[targetRow][targetCol] = specialType;
+        }
+    }
+
+    updateScore();
+    await delay(300);
+
+    // 타일 떨어뜨리기 및 채우기
+    await dropTiles();
+    await fillBoard();
+    renderBoard();
+
+    await delay(300);
+
+    // 연쇄 매치 (재귀 호출 시 lastSwappedTile은 null로 전달)
+    const newMatches = findMatches();
+    if (newMatches.length > 0) {
+        combo++;
+        updateCombo();
+        await processMatches(null);
+    } else {
+        combo = 1;
+        updateCombo();
+    }
 }
 
 // 타일 떨어뜨리기
