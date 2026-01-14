@@ -416,13 +416,28 @@ function renderBoard() {
         for (let col = 0; col < BOARD_SIZE; col++) {
             const tile = document.createElement('div');
             tile.className = 'tile';
+
+            // 기본 동물 이모지
             tile.textContent = board[row][col];
+
             tile.dataset.row = row;
             tile.dataset.col = col;
 
-            // 특수 블록 스타일 적용
-            if (specialBoard[row][col]) {
-                tile.classList.add(specialBoard[row][col]);
+            // 특수 블록 스타일 및 아이콘 적용
+            const specialType = specialBoard[row][col];
+            if (specialType) {
+                tile.classList.add(specialType);
+
+                // 아이콘 표시 (우측 하단이나 중앙에 오버레이)
+                const iconSpan = document.createElement('span');
+                iconSpan.className = 'special-icon-overlay';
+
+                if (specialType === SPECIAL_TYPES.H_LINE) iconSpan.textContent = SPECIAL_ICONS.H_LINE;
+                else if (specialType === SPECIAL_TYPES.V_LINE) iconSpan.textContent = SPECIAL_ICONS.V_LINE;
+                else if (specialType === SPECIAL_TYPES.BOMB) iconSpan.textContent = SPECIAL_ICONS.BOMB;
+                else if (specialType === SPECIAL_TYPES.COLOR) iconSpan.textContent = SPECIAL_ICONS.COLOR;
+
+                tile.appendChild(iconSpan);
             }
 
             // 클릭 이벤트 (데스크톱)
@@ -1080,7 +1095,7 @@ async function processMatches(lastSwappedTile = null) {
         });
 
         // 애니메이션 대기
-        await delay(100);
+        await delay(250);
 
         // 특수 블록 생성
         if (specialType) {
@@ -1099,7 +1114,7 @@ async function processMatches(lastSwappedTile = null) {
     await fillBoard();
     renderBoard();
 
-    await delay(150);
+    await delay(250);
 
     // 연쇄 매치 확인 (재귀 아님, 루프 혹은 호출)
     // processMatches는 async이므로, 현재 작업 끝난 후 다시 확인
