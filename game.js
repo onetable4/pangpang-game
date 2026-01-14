@@ -674,21 +674,25 @@ async function activateSpecialBlock(row, col) {
 }
 
 // 타일 교환
+// 타일 교환
 async function swapTiles(row1, col1, row2, col2) {
     isProcessing = true;
 
-    // 특수 블록인지 확인 (스왑 전 위치 기준)
-    const isSpecial1 = specialBoard[row1][col1] !== null;
-    const isSpecial2 = specialBoard[row2][col2] !== null;
+    const sourceRow = row1;
+    const sourceCol = col1;
+    const targetRow = row2;
+    const targetCol = col2;
+
+    const sourceType = board[sourceRow][sourceCol];
+    const targetType = board[targetRow][targetCol];
+    const sourceSpecial = specialBoard[sourceRow][sourceCol];
+    const targetSpecial = specialBoard[targetRow][targetCol];
 
     // 배열에서 교환
-    let temp = board[row1][col1];
-    board[row1][col1] = board[row2][col2];
-    board[row2][col2] = temp;
+    board[sourceRow][sourceCol] = targetType;
+    board[targetRow][targetCol] = sourceType;
 
     // 특수 블록도 교환
-    temp = specialBoard[row1][col1];
-    specialBoard[row1][col1] = specialBoard[row2][col2];
     specialBoard[sourceRow][sourceCol] = targetSpecial;
     specialBoard[targetRow][targetCol] = sourceSpecial;
 
