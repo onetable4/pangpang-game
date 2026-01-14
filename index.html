@@ -33,99 +33,103 @@
         <main class="game-board-wrapper">
             <div class="game-board" id="gameBoard"></div>
 
-            <!-- 게임 시작 오버레이 -->
-            <div class="game-overlay" id="startOverlay">
-                <div class="overlay-content">
-                    <h2>🎮 매치 퍼즐</h2>
-                    <div class="input-group">
-                        <input type="text" id="playerNameInput" placeholder="닉네임을 입력하세요" maxlength="10">
-                    </div>
 
-                    <button class="btn-start" id="startBtn">게임 시작</button>
-
-                    <div class="btn-group">
-                        <button class="btn-secondary" id="showLeaderboardBtn">🏆 랭킹 보기</button>
-                        <button class="btn-secondary" id="helpBtn">❓</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 게임 종료 오버레이 -->
-            <div class="game-overlay hidden" id="endOverlay">
-                <div class="overlay-content">
-                    <h2>⏱️ 시간 종료!</h2>
-                    <p>최종 점수</p>
-                    <div class="final-score" id="finalScore">0</div>
-
-                    <div id="newRecordMessage" class="hidden">🎉 현 시즌 1등 달성! 🎉</div>
-
-                    <!-- 1등 소감 입력 (평소엔 숨김) -->
-                    <div id="championInputArea" class="hidden">
-                        <p style="color: #ffd700; margin-bottom: 8px;">👑 명예의 전당에 남길 한마디 👑</p>
-                        <input type="text" id="championMessageInput" placeholder="소감을 입력해주세요 (20자 이내)" maxlength="20">
-                    </div>
-
-                    <button class="btn-start" id="submitScoreBtn">점수 등록</button>
-                    <button class="btn-secondary" id="endShowLeaderboardBtn">🏆 랭킹 보기</button>
-                    <button class="btn-secondary" id="restartBtn"
-                        style="margin-top: 8px; background: rgba(255, 255, 255, 0.1); font-size: 0.9rem;">다시 하기</button>
-                </div>
-            </div>
-
-            <!-- 리더보드 오버레이 -->
-            <div class="game-overlay hidden" id="leaderboardOverlay">
-                <div class="overlay-content leaderboard-content">
-                    <h2>🏆 명예의 전당</h2>
-
-                    <!-- 챔피언 메시지 표시 영역 -->
-                    <div id="championSection" class="champion-section hidden">
-                        <div class="champion-crown">👑 1st 챔피언의 한마디</div>
-                        <div class="champion-msg" id="championMessageDisplay">"애니팡은 실력이다"</div>
-                        <div class="champion-name" id="championNameDisplay">- 홍길동님 -</div>
-                    </div>
-
-                    <div class="leaderboard-list" id="leaderboardList">
-                        <div class="loading">불러오는 중...</div>
-                    </div>
-                    <button class="btn-secondary" id="closeLeaderboardBtn">닫기</button>
-                </div>
-            </div>
-
-            <!-- 도움말 오버레이 -->
-            <div class="game-overlay hidden help-overlay" id="helpOverlay">
-                <div class="overlay-content help-content">
-                    <h2>❓ 게임 설명</h2>
-                    <div class="help-list">
-                        <div class="help-row">
-                            <span class="help-icon-small">🐶</span>
-                            <span class="help-text">3개 매치 : 점수 획득</span>
-                        </div>
-                        <div class="help-row">
-                            <span class="help-icon-small">💎</span>
-                            <span class="help-text">4개 매치 : 랜덤 라인 삭제</span>
-                        </div>
-                        <div class="help-row">
-                            <span class="help-icon-small">💣</span>
-                            <span class="help-text">L/T (5개) : 주변 3x3 폭발</span>
-                        </div>
-                        <div class="help-row">
-                            <span class="help-icon-small">⚡</span>
-                            <span class="help-text">5개 매치 : 같은 동물 전체 삭제</span>
-                        </div>
-                    </div>
-
-                    <div class="help-tips">
-                        <p>💡 <strong>Tip</strong>: 특수 블록끼리 교환하면<br>즉시 발동하여 콤보 효과!</p>
-                    </div>
-
-                    <button class="btn-secondary" id="closeHelpBtn">닫기</button>
-                </div>
-            </div>
         </main>
 
         <footer class="game-footer">
             <p class="hint">블록을 스와이프하거나 클릭해서 맞추세요!</p>
         </footer>
+    </div>
+
+    <!-- 오버레이 요소들 (전체 컨테이너 커버) -->
+    <!-- 게임 시작 오버레이 -->
+    <div class="game-overlay" id="startOverlay">
+        <div class="overlay-content">
+            <h2>🎮 매치 퍼즐</h2>
+            <div class="input-group">
+                <input type="text" id="playerNameInput" placeholder="닉네임을 입력하세요" maxlength="10">
+            </div>
+
+            <button class="btn-start" id="startBtn">게임 시작</button>
+
+            <div class="btn-group">
+                <button class="btn-secondary" id="showLeaderboardBtn">🏆 랭킹 보기</button>
+                <button class="btn-secondary" id="helpBtn">❓</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 게임 종료 오버레이 -->
+    <div class="game-overlay hidden" id="endOverlay">
+        <div class="overlay-content">
+            <h2>⏱️ 시간 종료!</h2>
+            <p>최종 점수</p>
+            <div class="final-score" id="finalScore">0</div>
+
+            <div id="newRecordMessage" class="hidden">🎉 현 시즌 1등 달성! 🎉</div>
+
+            <!-- 1등 소감 입력 (평소엔 숨김) -->
+            <div id="championInputArea" class="hidden">
+                <p style="color: #ffd700; margin-bottom: 8px;">👑 명예의 전당에 남길 한마디 👑</p>
+                <input type="text" id="championMessageInput" placeholder="소감을 입력해주세요 (20자 이내)" maxlength="20">
+            </div>
+
+            <button class="btn-start" id="submitScoreBtn">점수 등록</button>
+            <button class="btn-secondary" id="endShowLeaderboardBtn">🏆 랭킹 보기</button>
+            <button class="btn-secondary" id="restartBtn"
+                style="margin-top: 8px; background: rgba(255, 255, 255, 0.1); font-size: 0.9rem;">다시 하기</button>
+        </div>
+    </div>
+
+    <!-- 리더보드 오버레이 -->
+    <div class="game-overlay hidden" id="leaderboardOverlay">
+        <div class="overlay-content leaderboard-content">
+            <h2>🏆 명예의 전당</h2>
+
+            <!-- 챔피언 메시지 표시 영역 -->
+            <div id="championSection" class="champion-section hidden">
+                <div class="champion-crown">👑 1st 챔피언의 한마디</div>
+                <div class="champion-msg" id="championMessageDisplay">"애니팡은 실력이다"</div>
+                <div class="champion-name" id="championNameDisplay">- 홍길동님 -</div>
+            </div>
+
+            <div class="leaderboard-list" id="leaderboardList">
+                <div class="loading">불러오는 중...</div>
+            </div>
+            <button class="btn-secondary" id="closeLeaderboardBtn">닫기</button>
+        </div>
+    </div>
+
+    <!-- 도움말 오버레이 -->
+    <div class="game-overlay hidden help-overlay" id="helpOverlay">
+        <div class="overlay-content help-content">
+            <h2>❓ 게임 설명</h2>
+            <div class="help-list">
+                <div class="help-row">
+                    <span class="help-icon-small">🐶</span>
+                    <span class="help-text">3개 매치 : 점수 획득</span>
+                </div>
+                <div class="help-row">
+                    <span class="help-icon-small">↔️</span>
+                    <span class="help-text">4개 매치 : 라인 삭제 (방향별)</span>
+                </div>
+                <div class="help-row">
+                    <span class="help-icon-small">💣</span>
+                    <span class="help-text">L/T (5개) : 주변 3x3 폭발</span>
+                </div>
+                <div class="help-row">
+                    <span class="help-icon-small">⚡</span>
+                    <span class="help-text">5개 매치 : 같은 동물 전체 삭제</span>
+                </div>
+            </div>
+
+            <div class="help-tips">
+                <p>💡 <strong>Tip</strong>: 특수 블록끼리 교환하면<br>즉시 발동하여 콤보 효과!</p>
+            </div>
+
+            <button class="btn-secondary" id="closeHelpBtn">닫기</button>
+        </div>
+    </div>
     </div>
 
     <script type="module" src="game.js"></script>
