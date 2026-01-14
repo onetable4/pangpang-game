@@ -1,13 +1,27 @@
 // 게임 상수
 const BOARD_SIZE = 7;
 const TILE_TYPES = ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐨'];
+const GAME_DURATION = 60; // 60초
+
+// 특수 블록 타입
+const SPECIAL_TYPES = {
+    HORIZONTAL: 'special-h',  // 가로줄 삭제
+    VERTICAL: 'special-v',    // 세로줄 삭제
+    DIAGONAL1: 'special-d1',  // 대각선 ↘ 삭제
+    DIAGONAL2: 'special-d2',  // 대각선 ↙ 삭제
+    COLOR: 'special-color'    // 같은 색 전체 삭제
+};
 
 // 게임 상태
 let board = [];
+let specialBoard = []; // 특수 블록 정보 저장
 let selectedTile = null;
 let score = 0;
 let combo = 1;
 let isProcessing = false;
+let gameStarted = false;
+let gameTimer = null;
+let timeRemaining = GAME_DURATION;
 
 // 터치/스와이프 상태
 let touchStartX = 0;
@@ -18,28 +32,87 @@ let touchStartTile = null;
 const gameBoard = document.getElementById('gameBoard');
 const scoreDisplay = document.getElementById('score');
 const comboDisplay = document.getElementById('combo');
+const timerFill = document.getElementById('timerFill');
+const timerText = document.getElementById('timerText');
+const startOverlay = document.getElementById('startOverlay');
+const endOverlay = document.getElementById('endOverlay');
+const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
+const finalScore = document.getElementById('finalScore');
 
-// 게임 초기화
+// 게임 초기화 (보드만 준비)
 function initGame() {
     board = [];
+    specialBoard = [];
     selectedTile = null;
     score = 0;
     combo = 1;
     isProcessing = false;
+    timeRemaining = GAME_DURATION;
 
     updateScore();
     updateCombo();
+    updateTimer();
 
     // 보드 생성 (매치 없이)
     for (let row = 0; row < BOARD_SIZE; row++) {
         board[row] = [];
+        specialBoard[row] = [];
         for (let col = 0; col < BOARD_SIZE; col++) {
             board[row][col] = getRandomTileWithoutMatch(row, col);
+            specialBoard[row][col] = null;
         }
     }
 
     renderBoard();
+}
+
+// 게임 시작
+function startGame() {
+    gameStarted = true;
+    startOverlay.classList.add('hidden');
+    endOverlay.classList.add('hidden');
+    initGame();
+    startTimer();
+}
+
+// 타이머 시작
+function startTimer() {
+    if (gameTimer) clearInterval(gameTimer);
+
+    gameTimer = setInterval(() => {
+        timeRemaining -= 0.1;
+        updateTimer();
+
+        if (timeRemaining <= 0) {
+            endGame();
+        }
+    }, 100);
+}
+
+// 타이머 업데이트
+function updateTimer() {
+    const percentage = (timeRemaining / GAME_DURATION) * 100;
+    timerFill.style.width = `${percentage}%`;
+    timerText.textContent = `${Math.ceil(timeRemaining)}초`;
+
+    if (timeRemaining <= 10) {
+        timerFill.classList.add('warning');
+    } else {
+        timerFill.classList.remove('warning');
+    }
+}
+
+// 게임 종료
+function endGame() {
+    gameStarted = false;
+    if (gameTimer) {
+        clearInterval(gameTimer);
+        gameTimer = null;
+    }
+
+    finalScore.textContent = score.toLocaleString();
+    endOverlay.classList.remove('hidden');
 }
 
 // 매치가 생기지 않는 랜덤 타일 생성
@@ -71,6 +144,11 @@ function renderBoard() {
             tile.dataset.row = row;
             tile.dataset.col = col;
 
+            // 특수 블록 스타일 적용
+            if (specialBoard[row][col]) {
+                tile.classList.add(specialBoard[row][col]);
+            }
+
             // 클릭 이벤트 (데스크톱)
             tile.addEventListener('click', () => handleTileClick(row, col));
 
@@ -85,7 +163,13 @@ function renderBoard() {
 
 // 타일 클릭 처리
 function handleTileClick(row, col) {
-    if (isProcessing) return;
+    if (isProcessing || !gameStarted) return;
+
+    // 특수 블록 클릭 시 발동
+    if (specialBoard[row][col]) {
+        activateSpecialBlock(row, col);
+        return;
+    }
 
     const tiles = document.querySelectorAll('.tile');
     const currentTile = tiles[row * BOARD_SIZE + col];
@@ -127,7 +211,7 @@ function isAdjacent(row1, col1, row2, col2) {
 
 // 터치 시작 핸들러
 function handleTouchStart(e, row, col) {
-    if (isProcessing) return;
+    if (isProcessing || !gameStarted) return;
 
     const touch = e.touches[0];
     touchStartX = touch.clientX;
@@ -142,7 +226,7 @@ function handleTouchStart(e, row, col) {
 
 // 터치 종료 핸들러 (스와이프 감지)
 function handleTouchEnd(e, row, col) {
-    if (isProcessing || !touchStartTile) return;
+    if (isProcessing || !touchStartTile || !gameStarted) return;
 
     // 선택 효과 제거
     const tiles = document.querySelectorAll('.tile');
@@ -154,6 +238,15 @@ function handleTouchEnd(e, row, col) {
     const deltaY = touch.clientY - touchStartY;
 
     const minSwipeDistance = 30; // 최소 스와이프 거리
+
+    // 스와이프가 너무 짧으면 탭으로 처리 (특수 블록 발동)
+    if (Math.abs(deltaX) < minSwipeDistance && Math.abs(deltaY) < minSwipeDistance) {
+        if (specialBoard[touchStartTile.row][touchStartTile.col]) {
+            activateSpecialBlock(touchStartTile.row, touchStartTile.col);
+        }
+        touchStartTile = null;
+        return;
+    }
 
     // 스와이프 방향 결정
     let targetRow = touchStartTile.row;
@@ -182,14 +275,107 @@ function handleTouchEnd(e, row, col) {
     touchStartTile = null;
 }
 
+// 특수 블록 발동
+async function activateSpecialBlock(row, col) {
+    isProcessing = true;
+    const specialType = specialBoard[row][col];
+    const tileType = board[row][col];
+    const tilesToClear = [];
+
+    if (specialType === SPECIAL_TYPES.HORIZONTAL) {
+        // 가로줄 전체 삭제
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            tilesToClear.push({ row, col: c });
+        }
+    } else if (specialType === SPECIAL_TYPES.VERTICAL) {
+        // 세로줄 전체 삭제
+        for (let r = 0; r < BOARD_SIZE; r++) {
+            tilesToClear.push({ row: r, col });
+        }
+    } else if (specialType === SPECIAL_TYPES.DIAGONAL1) {
+        // 대각선 ↘ 삭제
+        for (let i = -BOARD_SIZE; i < BOARD_SIZE; i++) {
+            const r = row + i;
+            const c = col + i;
+            if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE) {
+                tilesToClear.push({ row: r, col: c });
+            }
+        }
+    } else if (specialType === SPECIAL_TYPES.DIAGONAL2) {
+        // 대각선 ↙ 삭제
+        for (let i = -BOARD_SIZE; i < BOARD_SIZE; i++) {
+            const r = row + i;
+            const c = col - i;
+            if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE) {
+                tilesToClear.push({ row: r, col: c });
+            }
+        }
+    } else if (specialType === SPECIAL_TYPES.COLOR) {
+        // 같은 동물 전체 삭제
+        for (let r = 0; r < BOARD_SIZE; r++) {
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                if (board[r][c] === tileType) {
+                    tilesToClear.push({ row: r, col: c });
+                }
+            }
+        }
+    }
+
+    // 점수 계산
+    const clearScore = tilesToClear.length * 15 * combo;
+    score += clearScore;
+    updateScore();
+    showScorePopup(clearScore);
+
+    // 애니메이션
+    const tiles = document.querySelectorAll('.tile');
+    tilesToClear.forEach(({ row: r, col: c }) => {
+        const tile = tiles[r * BOARD_SIZE + c];
+        if (tile) tile.classList.add('line-clear');
+    });
+
+    await delay(500);
+
+    // 타일 제거
+    tilesToClear.forEach(({ row: r, col: c }) => {
+        board[r][c] = null;
+        specialBoard[r][c] = null;
+    });
+
+    combo++;
+    updateCombo();
+
+    // 떨어뜨리고 채우기
+    await dropTiles();
+    await fillBoard();
+    renderBoard();
+
+    await delay(300);
+
+    // 연쇄 매치 확인
+    const matches = findMatches();
+    if (matches.length > 0) {
+        await processMatches();
+    }
+
+    combo = 1;
+    updateCombo();
+    isProcessing = false;
+}
+
 // 타일 교환
 async function swapTiles(row1, col1, row2, col2) {
     isProcessing = true;
 
     // 배열에서 교환
-    const temp = board[row1][col1];
+    let temp = board[row1][col1];
     board[row1][col1] = board[row2][col2];
     board[row2][col2] = temp;
+
+    // 특수 블록도 교환
+    temp = specialBoard[row1][col1];
+    specialBoard[row1][col1] = specialBoard[row2][col2];
+    specialBoard[row2][col2] = temp;
 
     renderBoard();
 
@@ -202,17 +388,24 @@ async function swapTiles(row1, col1, row2, col2) {
     } else {
         // 매치가 없으면 다시 교환
         await delay(200);
+        temp = board[row2][col2];
         board[row2][col2] = board[row1][col1];
         board[row1][col1] = temp;
+
+        temp = specialBoard[row2][col2];
+        specialBoard[row2][col2] = specialBoard[row1][col1];
+        specialBoard[row1][col1] = temp;
+
         renderBoard();
     }
 
     isProcessing = false;
 }
 
-// 매치 찾기
+// 매치 찾기 (방향과 길이 정보 포함)
 function findMatches() {
-    const matches = new Set();
+    const matches = [];
+    const visited = new Set();
 
     // 가로 매치 확인
     for (let row = 0; row < BOARD_SIZE; row++) {
@@ -220,16 +413,24 @@ function findMatches() {
             if (board[row][col] &&
                 board[row][col] === board[row][col + 1] &&
                 board[row][col] === board[row][col + 2]) {
-                matches.add(`${row},${col}`);
-                matches.add(`${row},${col + 1}`);
-                matches.add(`${row},${col + 2}`);
 
-                // 3개 이상 연속 확인
-                let k = col + 3;
+                const matchTiles = [{ row, col }];
+                let k = col + 1;
                 while (k < BOARD_SIZE && board[row][k] === board[row][col]) {
-                    matches.add(`${row},${k}`);
+                    matchTiles.push({ row, col: k });
                     k++;
                 }
+
+                const key = `h-${row}-${col}`;
+                if (!visited.has(key)) {
+                    visited.add(key);
+                    matches.push({
+                        type: 'horizontal',
+                        tiles: matchTiles,
+                        length: matchTiles.length
+                    });
+                }
+                col = k - 1;
             }
         }
     }
@@ -240,16 +441,24 @@ function findMatches() {
             if (board[row][col] &&
                 board[row][col] === board[row + 1][col] &&
                 board[row][col] === board[row + 2][col]) {
-                matches.add(`${row},${col}`);
-                matches.add(`${row + 1},${col}`);
-                matches.add(`${row + 2},${col}`);
 
-                // 3개 이상 연속 확인
-                let k = row + 3;
+                const matchTiles = [{ row, col }];
+                let k = row + 1;
                 while (k < BOARD_SIZE && board[k][col] === board[row][col]) {
-                    matches.add(`${k},${col}`);
+                    matchTiles.push({ row: k, col });
                     k++;
                 }
+
+                const key = `v-${row}-${col}`;
+                if (!visited.has(key)) {
+                    visited.add(key);
+                    matches.push({
+                        type: 'vertical',
+                        tiles: matchTiles,
+                        length: matchTiles.length
+                    });
+                }
+                row = k - 1;
             }
         }
     }
@@ -260,15 +469,23 @@ function findMatches() {
             if (board[row][col] &&
                 board[row][col] === board[row + 1][col + 1] &&
                 board[row][col] === board[row + 2][col + 2]) {
-                matches.add(`${row},${col}`);
-                matches.add(`${row + 1},${col + 1}`);
-                matches.add(`${row + 2},${col + 2}`);
 
-                let k = 3;
+                const matchTiles = [{ row, col }];
+                let k = 1;
                 while (row + k < BOARD_SIZE && col + k < BOARD_SIZE &&
                     board[row + k][col + k] === board[row][col]) {
-                    matches.add(`${row + k},${col + k}`);
+                    matchTiles.push({ row: row + k, col: col + k });
                     k++;
+                }
+
+                const key = `d1-${row}-${col}`;
+                if (!visited.has(key)) {
+                    visited.add(key);
+                    matches.push({
+                        type: 'diagonal1',
+                        tiles: matchTiles,
+                        length: matchTiles.length
+                    });
                 }
             }
         }
@@ -280,24 +497,29 @@ function findMatches() {
             if (board[row][col] &&
                 board[row][col] === board[row + 1][col - 1] &&
                 board[row][col] === board[row + 2][col - 2]) {
-                matches.add(`${row},${col}`);
-                matches.add(`${row + 1},${col - 1}`);
-                matches.add(`${row + 2},${col - 2}`);
 
-                let k = 3;
+                const matchTiles = [{ row, col }];
+                let k = 1;
                 while (row + k < BOARD_SIZE && col - k >= 0 &&
                     board[row + k][col - k] === board[row][col]) {
-                    matches.add(`${row + k},${col - k}`);
+                    matchTiles.push({ row: row + k, col: col - k });
                     k++;
+                }
+
+                const key = `d2-${row}-${col}`;
+                if (!visited.has(key)) {
+                    visited.add(key);
+                    matches.push({
+                        type: 'diagonal2',
+                        tiles: matchTiles,
+                        length: matchTiles.length
+                    });
                 }
             }
         }
     }
 
-    return Array.from(matches).map(pos => {
-        const [row, col] = pos.split(',').map(Number);
-        return { row, col };
-    });
+    return matches;
 }
 
 // 매치 처리
@@ -305,24 +527,79 @@ async function processMatches() {
     let matches = findMatches();
 
     while (matches.length > 0) {
+        const allTiles = new Set();
+        const specialBlocksToCreate = [];
+
+        matches.forEach(match => {
+            // 특수 블록 생성 위치 결정 (첫 번째 타일 위치)
+            const firstTile = match.tiles[0];
+
+            if (match.length >= 5) {
+                // 5개 이상: 색상 폭탄
+                specialBlocksToCreate.push({
+                    row: firstTile.row,
+                    col: firstTile.col,
+                    type: SPECIAL_TYPES.COLOR,
+                    tileType: board[firstTile.row][firstTile.col]
+                });
+            } else if (match.length === 4) {
+                // 4개: 방향별 라인 클리어
+                let specialType;
+                if (match.type === 'horizontal') {
+                    specialType = SPECIAL_TYPES.HORIZONTAL;
+                } else if (match.type === 'vertical') {
+                    specialType = SPECIAL_TYPES.VERTICAL;
+                } else if (match.type === 'diagonal1') {
+                    specialType = SPECIAL_TYPES.DIAGONAL1;
+                } else {
+                    specialType = SPECIAL_TYPES.DIAGONAL2;
+                }
+                specialBlocksToCreate.push({
+                    row: firstTile.row,
+                    col: firstTile.col,
+                    type: specialType,
+                    tileType: board[firstTile.row][firstTile.col]
+                });
+            }
+
+            match.tiles.forEach(tile => {
+                allTiles.add(`${tile.row},${tile.col}`);
+            });
+        });
+
         // 매치된 타일 애니메이션
         const tiles = document.querySelectorAll('.tile');
-        matches.forEach(({ row, col }) => {
+        allTiles.forEach(pos => {
+            const [row, col] = pos.split(',').map(Number);
             const tile = tiles[row * BOARD_SIZE + col];
             if (tile) tile.classList.add('matched');
         });
 
         // 점수 계산 및 표시
-        const matchScore = matches.length * 10 * combo;
+        const matchScore = allTiles.size * 10 * combo;
         score += matchScore;
         updateScore();
         showScorePopup(matchScore);
 
         await delay(400);
 
-        // 매치된 타일 제거
-        matches.forEach(({ row, col }) => {
-            board[row][col] = null;
+        // 매치된 타일 제거 (특수 블록 생성할 위치 제외)
+        const specialPositions = new Set(
+            specialBlocksToCreate.map(s => `${s.row},${s.col}`)
+        );
+
+        allTiles.forEach(pos => {
+            const [row, col] = pos.split(',').map(Number);
+            if (!specialPositions.has(pos)) {
+                board[row][col] = null;
+                specialBoard[row][col] = null;
+            }
+        });
+
+        // 특수 블록 생성
+        specialBlocksToCreate.forEach(special => {
+            specialBoard[special.row][special.col] = special.type;
+            // 타일 유지 (이미 있음)
         });
 
         // 타일 떨어뜨리기
@@ -357,7 +634,9 @@ async function dropTiles() {
             if (board[row][col] !== null) {
                 if (row !== emptyRow) {
                     board[emptyRow][col] = board[row][col];
+                    specialBoard[emptyRow][col] = specialBoard[row][col];
                     board[row][col] = null;
+                    specialBoard[row][col] = null;
                 }
                 emptyRow--;
             }
@@ -371,6 +650,7 @@ async function fillBoard() {
         for (let row = 0; row < BOARD_SIZE; row++) {
             if (board[row][col] === null) {
                 board[row][col] = TILE_TYPES[Math.floor(Math.random() * TILE_TYPES.length)];
+                specialBoard[row][col] = null;
             }
         }
     }
@@ -408,7 +688,8 @@ function delay(ms) {
 }
 
 // 이벤트 리스너
-restartBtn.addEventListener('click', initGame);
+startBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('click', startGame);
 
-// 게임 시작
+// 초기 보드 표시 (게임 시작 전)
 initGame();

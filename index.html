@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>애니팡 스타일 퍼즐 게임</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="game-container">
         <header class="game-header">
@@ -20,18 +22,47 @@
                     <span class="score-value combo" id="combo">x1</span>
                 </div>
             </div>
+            <div class="timer-container">
+                <div class="timer-bar">
+                    <div class="timer-fill" id="timerFill"></div>
+                </div>
+                <span class="timer-text" id="timerText">60초</span>
+            </div>
         </header>
-        
+
         <main class="game-board-wrapper">
             <div class="game-board" id="gameBoard"></div>
+
+            <!-- 게임 시작 오버레이 -->
+            <div class="game-overlay" id="startOverlay">
+                <div class="overlay-content">
+                    <h2>🎮 매치 퍼즐</h2>
+                    <p>3개 이상 같은 블록을 맞춰 점수를 획득하세요!</p>
+                    <div class="special-info">
+                        <p>💫 <strong>4개 매치</strong> → 줄 삭제 특수블록</p>
+                        <p>⭐ <strong>5개 매치</strong> → 같은 블록 전체 삭제</p>
+                    </div>
+                    <button class="btn-start" id="startBtn">게임 시작</button>
+                </div>
+            </div>
+
+            <!-- 게임 종료 오버레이 -->
+            <div class="game-overlay hidden" id="endOverlay">
+                <div class="overlay-content">
+                    <h2>⏱️ 시간 종료!</h2>
+                    <p>최종 점수</p>
+                    <div class="final-score" id="finalScore">0</div>
+                    <button class="btn-start" id="restartBtn">다시 하기</button>
+                </div>
+            </div>
         </main>
-        
+
         <footer class="game-footer">
-            <button class="btn-restart" id="restartBtn">🔄 새 게임</button>
-            <p class="hint">블록을 클릭해서 서로 바꾸세요!</p>
+            <p class="hint">블록을 스와이프하거나 클릭해서 맞추세요!</p>
         </footer>
     </div>
-    
+
     <script src="game.js"></script>
 </body>
+
 </html>
