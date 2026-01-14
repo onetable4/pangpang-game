@@ -133,11 +133,21 @@ function handleTouchStart(e, row, col) {
     touchStartX = touch.clientX;
     touchStartY = touch.clientY;
     touchStartTile = { row, col };
+
+    // 터치한 타일에 선택 효과 추가
+    const tiles = document.querySelectorAll('.tile');
+    const currentTile = tiles[row * BOARD_SIZE + col];
+    currentTile.classList.add('selected');
 }
 
 // 터치 종료 핸들러 (스와이프 감지)
 function handleTouchEnd(e, row, col) {
     if (isProcessing || !touchStartTile) return;
+
+    // 선택 효과 제거
+    const tiles = document.querySelectorAll('.tile');
+    const startTile = tiles[touchStartTile.row * BOARD_SIZE + touchStartTile.col];
+    startTile.classList.remove('selected');
 
     const touch = e.changedTouches[0];
     const deltaX = touch.clientX - touchStartX;
