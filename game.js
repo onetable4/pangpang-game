@@ -62,6 +62,12 @@ const leaderboardOverlay = document.getElementById('leaderboardOverlay');
 const leaderboardList = document.getElementById('leaderboardList');
 const newRecordMessage = document.getElementById('newRecordMessage');
 
+// 일시정지 관련 DOM
+const pauseBtn = document.getElementById('pauseBtn');
+const pauseOverlay = document.getElementById('pauseOverlay');
+const resumeBtn = document.getElementById('resumeBtn');
+const pauseRestartBtn = document.getElementById('pauseRestartBtn');
+
 // 닉네임 로드
 if (playerName) {
     playerNameInput.value = playerName;
@@ -172,9 +178,50 @@ async function startGame() {
 
     // 카운트다운 후 게임 시작
     gameStarted = true;
+    pauseBtn.classList.remove('hidden'); // 일시정지 버튼 표시
     initGame();
     startTimer();
 }
+
+// 일시정지 버튼 이벤트
+pauseBtn.addEventListener('click', () => {
+    if (!gameStarted || isProcessing) return;
+
+    // 타이머 일시정지
+    if (gameTimer) {
+        clearInterval(gameTimer);
+        gameTimer = null;
+    }
+
+    // 일시정지 오버레이 표시
+    pauseOverlay.classList.remove('hidden');
+});
+
+// 재개 버튼 이벤트
+resumeBtn.addEventListener('click', () => {
+    pauseOverlay.classList.add('hidden');
+
+    // 타이머 재개
+    if (gameStarted) {
+        startTimer();
+    }
+});
+
+// 일시정지 중 다시 하기 버튼
+pauseRestartBtn.addEventListener('click', async () => {
+    pauseOverlay.classList.add('hidden');
+    pauseBtn.classList.add('hidden');
+    gameStarted = false;
+
+    // 타이머 정리
+    if (gameTimer) {
+        clearInterval(gameTimer);
+        gameTimer = null;
+    }
+
+    // 시작 화면으로
+    startOverlay.classList.remove('hidden');
+});
 
 // 카운트다운 표시
 async function showCountdown() {

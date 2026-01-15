@@ -27,6 +27,7 @@
                     <div class="timer-fill" id="timerFill"></div>
                 </div>
                 <span class="timer-text" id="timerText">60초</span>
+                <button class="pause-btn hidden" id="pauseBtn">⏸️</button>
             </div>
         </header>
 
@@ -133,6 +134,15 @@
             </div>
 
             <button class="btn-secondary" id="closeHelpBtn">닫기</button>
+        </div>
+    </div>
+
+    <!-- 일시정지 오버레이 -->
+    <div class="game-overlay hidden" id="pauseOverlay">
+        <div class="overlay-content">
+            <h2>⏸️ 일시정지</h2>
+            <button class="btn-start" id="resumeBtn">계속하기</button>
+            <button class="btn-secondary" id="pauseRestartBtn" style="margin-top: 12px;">다시 하기</button>
         </div>
     </div>
     </div>
