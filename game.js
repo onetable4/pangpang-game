@@ -1147,8 +1147,8 @@ async function processMatches(swappedTiles = null) {
     const groups = findMatches();
     if (groups.length === 0) return;
 
-    // 사용자가 직접 한 매치일 때만 시간 체크 및 콤보 증가
-    if (isUserMatch) {
+    // 콤보 로직은 handleUserCombo로 이동됨 through swapTiles
+    if (false) {
         // 시간 기반 콤보 체크 (2초 이내 매치 시 콤보 유지)
         const currentTime = Date.now();
         if (lastMatchTime > 0 && (currentTime - lastMatchTime) > 2000) {
