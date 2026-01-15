@@ -129,6 +129,11 @@ endShowLeaderboardBtn.addEventListener('click', () => {
 
 closeLeaderboardBtn.addEventListener('click', () => {
     leaderboardOverlay.classList.add('hidden');
+    // 게임 종료 화면이 보이고 있다면 시작 화면으로 전환
+    if (!endOverlay.classList.contains('hidden')) {
+        endOverlay.classList.add('hidden');
+        startOverlay.classList.remove('hidden');
+    }
 });
 
 // 게임 시작
@@ -867,10 +872,25 @@ function swapInBoard(row1, col1, row2, col2) {
 
 // 보드 셔플
 async function shuffleBoard() {
-    // 셔플 메시지 표시
-    showScorePopup('🔀 셔플!');
+    // 타이머 일시정지
+    const timerWasRunning = gameTimer !== null;
+    if (timerWasRunning) {
+        clearInterval(gameTimer);
+        gameTimer = null;
+    }
 
-    await delay(500);
+    // 셔플 애니메이션 표시 (카운트다운 오버레이 재사용)
+    const countdownOverlay = document.getElementById('countdownOverlay');
+    const countdownDisplay = document.getElementById('countdownDisplay');
+
+    countdownOverlay.classList.remove('hidden');
+    countdownDisplay.textContent = '🔀 셔플!';
+    countdownDisplay.className = 'countdown-display';
+    void countdownDisplay.offsetWidth; // 리플로우 강제
+    countdownDisplay.classList.add('countdown-animate');
+
+    await delay(800);
+    countdownOverlay.classList.add('hidden');
 
     // 특수 블록이 아닌 타일만 수집
     const normalTiles = [];
@@ -902,12 +922,18 @@ async function shuffleBoard() {
     // 셔플 후에도 가능한 수가 없으면 다시 셔플
     if (!hasPossibleMoves()) {
         await shuffleBoard();
+        return; // 재귀 호출 후 타이머는 재귀에서 재개
     }
 
     // 셔플 후 매치가 있으면 처리
     const matches = findMatches();
     if (matches.length > 0) {
         await processMatches();
+    }
+
+    // 타이머 재개
+    if (timerWasRunning && gameStarted) {
+        startTimer();
     }
 }
 
