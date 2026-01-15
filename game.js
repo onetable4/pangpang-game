@@ -29,7 +29,7 @@ let board = [];
 let specialBoard = []; // 특수 블록 정보 저장
 let selectedTile = null;
 let score = 0;
-let combo = 1;
+let combo = 0; // combo starts at 0
 let lastMatchTime = 0; // 마지막 매치 시각 (시간 기반 콤보용)
 let isProcessing = false;
 let gameStarted = false;
@@ -803,8 +803,8 @@ async function swapTiles(row1, col1, row2, col2) {
     const matches = findMatches();
     if (matches.length > 0) {
         // 유효한 스왑
-        combo = 1;
-        updateCombo();
+        // 유효한 스왑 - 콤보 처리
+        handleUserCombo();
 
         // 스왑으로 인한 매치이므로, 스왑된 두 타일 위치를 모두 전달
         const swappedTiles = {
@@ -827,7 +827,7 @@ async function swapTiles(row1, col1, row2, col2) {
 
         // 특수 블록이 발동되지 않았다면 일반 매치 처리
         if (!specialActivated) {
-            await processMatches(swappedTiles, true); // 사용자 매치
+            await processMatches(swappedTiles);
         }
 
     } else {
@@ -845,6 +845,9 @@ async function swapTiles(row1, col1, row2, col2) {
             // 둘 다 특수 블록끼리 스왑이면 -> 콤보 효과 (이미 activate 로직에 구현 가능하지만 여기선 단순 발동)
 
             if (specialBoard[targetRow][targetCol]) await activateSpecialBlock(targetRow, targetCol);
+
+            // 특수 블록 스왑은 항상 콤보로 인정 (매치가 없더라도 발동되므로)
+            handleUserCombo();
 
         } else {
             // 일반 타일끼리 매치 실패 -> 원위치
@@ -1265,8 +1268,8 @@ async function processMatches(swappedTiles = null, isUserMatch = false) {
         updateScore();
         showScorePopup('+10 연쇄');
 
-        // 연쇄는 사용자 매치가 아니므로 isUserMatch=false
-        await processMatches(null, false);
+        // 연쇄는 스왑 주체 없음
+        await processMatches(null);
     }
 }
 
@@ -1345,6 +1348,24 @@ function updateCombo() {
             setTimeout(() => comboDisplay.classList.remove('combo-burst'), 300);
         }
     }
+}
+
+// 사용자 액션에 의한 콤보 처리 (중앙 집중식)
+function handleUserCombo() {
+    const currentTime = Date.now();
+
+    // 시간 기반 콤보 체크 (2초 이내 매치 시 콤보 유지)
+    if (lastMatchTime > 0 && (currentTime - lastMatchTime) > 2000) {
+        // 2초 경과 -> 콤보 리셋
+        combo = 0;
+    }
+
+    // 콤보 증가
+    combo++;
+    updateCombo();
+
+    // 마지막 매치 시각 업데이트
+    lastMatchTime = currentTime;
 }
 
 // 점수 팝업 표시
