@@ -261,6 +261,14 @@ function startTimer() {
         if (timeRemaining <= 0) {
             endGame();
         }
+
+        // 콤보 시간 체크 (시각적 리셋)
+        if (combo > 0 && lastMatchTime > 0) {
+            if (Date.now() - lastMatchTime > 2000) {
+                combo = 0;
+                updateCombo();
+            }
+        }
     }, 100);
 }
 
@@ -309,6 +317,31 @@ async function endGame() {
 
     if (score === 0) return;
 
+    // 1등인지 먼저 확인 (내 점수 저장 전에 DB조회)
+    // 저장 후 조회하면 내 점수가 포함되어 1등 판별이 복잡함
+    let isChampion = false;
+    try {
+        const scoresRef = ref(db, 'scores');
+        const topScoreQuery = query(scoresRef, orderByChild('score'));
+        const snapshot = await get(topScoreQuery);
+
+        let highestScore = 0;
+        if (snapshot.exists()) {
+            snapshot.forEach((child) => {
+                const s = Number(child.val().score);
+                if (s > highestScore) {
+                    highestScore = s;
+                }
+            });
+        }
+
+        if (score > highestScore) {
+            isChampion = true;
+        }
+    } catch (e) {
+        console.error("High score check failed:", e);
+    }
+
     // 점수 자동 저장
     try {
         const scoresRef = ref(db, 'scores');
@@ -329,45 +362,25 @@ async function endGame() {
         console.error("Auto-save failed:", e);
     }
 
-    // 1등인지 확인
-    try {
-        const scoresRef = ref(db, 'scores');
-        // 전체 점수를 가져와서 직접 비교 (DB 문자열 정렬 문제 해결)
-        // 데이터가 아주 많아지면 limitToLast(100) 등으로 최적화 필요하지만 지금은 안전성 우선
-        const topScoreQuery = query(scoresRef, orderByChild('score'));
-        const snapshot = await get(topScoreQuery);
+    // UI 업데이트
+    if (isChampion) {
+        // 1등임! -> 축하 메시지 및 강조
+        newRecordMessage.textContent = "🏆 전체 1등 달성! 🏆";
+        newRecordMessage.classList.remove('hidden');
 
-        let highestScore = 0;
-        if (snapshot.exists()) {
-            snapshot.forEach((child) => {
-                const s = Number(child.val().score);
-                if (s > highestScore) {
-                    highestScore = s;
-                }
-            });
-        }
-
-        if (Number(score) > highestScore) {
-            // 1등임! -> 축하 메시지 및 강조
-            newRecordMessage.textContent = "🏆 전체 1등 달성! 🏆";
-            newRecordMessage.classList.remove('hidden');
-
-            msgLabel.style.color = '#ffd700';
-            msgLabel.textContent = "👑 명예의 전당에 남길 한마디 👑";
-            msgInput.placeholder = "챔피언의 소감을 남겨주세요!";
-            submitScoreBtn.textContent = "한마디 저장";
-        } else {
-            // 1등 아님 -> 일반 종료
-            msgLabel.style.color = '#fff';
-            msgLabel.textContent = "오늘의 한마디";
-            msgInput.placeholder = "남기고 싶은 말이 있다면 적어주세요 (선택)";
-            submitScoreBtn.textContent = "한마디 저장 (선택)";
-        }
-    } catch (e) {
-        console.error("Error checking high score: ", e);
-        // 에러 시 일반 모드로
+        msgLabel.style.color = '#ffd700';
+        msgLabel.textContent = "👑 명예의 전당에 남길 한마디 👑";
+        msgInput.placeholder = "챔피언의 소감을 남겨주세요!";
+        submitScoreBtn.textContent = "한마디 저장";
+    } else {
+        // 1등 아님 -> 일반 종료
+        msgLabel.style.color = '#fff';
         msgLabel.textContent = "오늘의 한마디";
-        submitScoreBtn.textContent = "점수 등록";
+        msgInput.placeholder = "남기고 싶은 말이 있다면 적어주세요 (선택)";
+        submitScoreBtn.textContent = "한마디 저장 (선택)";
+    }
+}
+
     }
 }
 
