@@ -132,7 +132,7 @@ closeLeaderboardBtn.addEventListener('click', () => {
 });
 
 // 게임 시작
-function startGame() {
+async function startGame() {
     const name = playerNameInput.value.trim();
 
     // 이름 검증
@@ -156,14 +156,42 @@ function startGame() {
     playerName = name;
     localStorage.setItem('lastPlayerName', playerName);
 
-    gameStarted = true;
+    // 오버레이 숨기기
     startOverlay.classList.add('hidden');
     endOverlay.classList.add('hidden');
     leaderboardOverlay.classList.add('hidden');
-    helpOverlay.classList.add('hidden'); // 혹시 열려있다면 닫기
+    helpOverlay.classList.add('hidden');
 
+    // 카운트다운 표시
+    await showCountdown();
+
+    // 카운트다운 후 게임 시작
+    gameStarted = true;
     initGame();
     startTimer();
+}
+
+// 카운트다운 표시
+async function showCountdown() {
+    const countdownOverlay = document.getElementById('countdownOverlay');
+    const countdownDisplay = document.getElementById('countdownDisplay');
+
+    countdownOverlay.classList.remove('hidden');
+
+    const sequence = ['Ready?', '3', '2', '1', 'Start!'];
+
+    for (let i = 0; i < sequence.length; i++) {
+        countdownDisplay.textContent = sequence[i];
+        countdownDisplay.className = 'countdown-display';
+
+        // 애니메이션 트리거
+        void countdownDisplay.offsetWidth;
+        countdownDisplay.classList.add('countdown-animate');
+
+        await delay(i === 0 ? 800 : 700); // Ready는 조금 더 길게
+    }
+
+    countdownOverlay.classList.add('hidden');
 }
 
 // 타이머 시작
