@@ -1338,10 +1338,15 @@ function updateScore() {
 
 // 콤보 업데이트
 function updateCombo() {
-    comboDisplay.textContent = `x${combo}`;
-    if (combo > 1) {
-        comboDisplay.classList.add('combo-burst');
-        setTimeout(() => comboDisplay.classList.remove('combo-burst'), 300);
+    if (combo === 0) {
+        comboDisplay.textContent = '-';
+        comboDisplay.classList.remove('combo-burst');
+    } else {
+        comboDisplay.textContent = `${combo} 콤보`;
+        if (combo > 1) {
+            comboDisplay.classList.add('combo-burst');
+            setTimeout(() => comboDisplay.classList.remove('combo-burst'), 300);
+        }
     }
 }
 
