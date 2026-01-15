@@ -470,26 +470,21 @@ function handleTileClick(row, col) {
     const tiles = document.querySelectorAll('.tile');
     const currentTile = tiles[row * BOARD_SIZE + col];
 
+    // 특수 블록은 첫 클릭에 바로 발동
+    if (specialBoard[row][col]) {
+        activateSpecialBlock(row, col);
+        return;
+    }
+
     if (selectedTile === null) {
         // 첫 번째 타일 선택
         selectedTile = { row, col };
         currentTile.classList.add('selected');
-
-        // 특수 블록이면 햅틱/시각 효과 추가? (일단 선택됨 표시만)
     } else {
         const prevTile = tiles[selectedTile.row * BOARD_SIZE + selectedTile.col];
 
-        // 같은 타일 클릭 시
+        // 같은 타일 클릭 시 선택 해제
         if (selectedTile.row === row && selectedTile.col === col) {
-            // 특수 블록을 두 번 클릭하면 발동 (선택 해제 대신)
-            if (specialBoard[row][col]) {
-                prevTile.classList.remove('selected');
-                selectedTile = null;
-                activateSpecialBlock(row, col);
-                return;
-            }
-
-            // 일반 타일은 선택 해제
             prevTile.classList.remove('selected');
             selectedTile = null;
             return;

@@ -907,3 +907,20 @@ body {
     pointer-events: none;
     z-index: 5;
 }
+
+/* 1등 랭킹 툴팁 위치 수정 - 아래로 표시 */
+.rank-1[data-tooltip]:hover::after {
+    bottom: auto;
+    top: 100%;
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
+.rank-1[data-tooltip]:hover::before {
+    bottom: auto;
+    top: 100%;
+    border-top-color: transparent;
+    border-bottom-color: #ffd700;
+    margin-top: -6px;
+    margin-bottom: 0;
+}
