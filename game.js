@@ -136,8 +136,9 @@ endShowLeaderboardBtn.addEventListener('click', () => {
 
 closeLeaderboardBtn.addEventListener('click', () => {
     leaderboardOverlay.classList.add('hidden');
-    // 게임 종료 화면이 보이고 있다면 시작 화면으로 전환
-    if (!endOverlay.classList.contains('hidden')) {
+
+    // 게임이 종료된 상태면 시작 화면으로
+    if (!gameStarted) {
         endOverlay.classList.add('hidden');
         startOverlay.classList.remove('hidden');
     }
