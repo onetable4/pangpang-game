@@ -355,13 +355,13 @@ async function endGame() {
             msgLabel.style.color = '#ffd700';
             msgLabel.textContent = "👑 명예의 전당에 남길 한마디 👑";
             msgInput.placeholder = "챔피언의 소감을 남겨주세요!";
-            submitScoreBtn.textContent = "명예의 전당 등록";
+            submitScoreBtn.textContent = "한마디 저장";
         } else {
             // 1등 아님 -> 일반 종료
             msgLabel.style.color = '#fff';
             msgLabel.textContent = "오늘의 한마디";
-            msgInput.placeholder = "게임 소감을 남겨주세요";
-            submitScoreBtn.textContent = "점수 등록";
+            msgInput.placeholder = "남기고 싶은 말이 있다면 적어주세요 (선택)";
+            submitScoreBtn.textContent = "한마디 저장 (선택)";
         }
     } catch (e) {
         console.error("Error checking high score: ", e);
