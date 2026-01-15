@@ -1,6 +1,6 @@
 // Firebase 라이브러리 임포트 (CDN 사용)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, push, query, orderByChild, limitToLast, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, push, update, query, orderByChild, limitToLast, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 // Firebase 설정
 const firebaseConfig = {
@@ -30,6 +30,7 @@ let specialBoard = []; // 특수 블록 정보 저장
 let selectedTile = null;
 let score = 0;
 let combo = 0; // combo starts at 0
+let lastScoreKey = null; // 저장된 점수 키
 let lastMatchTime = 0; // 마지막 매치 시각 (시간 기반 콤보용)
 let isProcessing = false;
 let gameStarted = false;
@@ -304,8 +305,29 @@ async function endGame() {
     const msgInput = document.getElementById('championMessageInput');
     const msgLabel = championInputArea.querySelector('p');
     msgInput.value = '';
+    lastScoreKey = null;
 
     if (score === 0) return;
+
+    // 점수 자동 저장
+    try {
+        const scoresRef = ref(db, 'scores');
+        const newScoreRef = await push(scoresRef, {
+            name: playerName,
+            score: score,
+            message: "", // 초기에는 빈 메시지
+            timestamp: Date.now()
+        });
+        lastScoreKey = newScoreRef.key;
+
+        // 내 최고 기록 업데이트
+        const myBest = parseInt(localStorage.getItem('myBestScore') || '0');
+        if (score > myBest) {
+            localStorage.setItem('myBestScore', score);
+        }
+    } catch (e) {
+        console.error("Auto-save failed:", e);
+    }
 
     // 1등인지 확인
     try {
@@ -350,14 +372,24 @@ async function endGame() {
 }
 
 // 점수 등록 버튼 클릭
+// 점수 등록(한마디 저장) 버튼 클릭
 submitScoreBtn.addEventListener('click', async () => {
-    const msg = championMessageInput.value.trim() || "게임은 즐겁게!";
-    await saveScore(playerName, score, msg);
+    const msg = championMessageInput.value.trim();
+
+    if (lastScoreKey && msg) {
+        try {
+            await update(ref(db, `scores/${lastScoreKey}`), {
+                message: msg
+            });
+        } catch (e) {
+            console.error("Message update failed:", e);
+        }
+    }
 
     // UI 업데이트
     championInputArea.classList.add('hidden');
     submitScoreBtn.classList.add('hidden');
-    endOverlay.classList.add('hidden'); // 중복 등록 방지
+    endOverlay.classList.add('hidden');
 
     // 바로 리더보드 보여주기
     leaderboardOverlay.classList.remove('hidden');
