@@ -408,6 +408,11 @@ function getRandomTileWithoutMatch(row, col) {
     return availableTypes[Math.floor(Math.random() * availableTypes.length)];
 }
 
+// 랜덤 타일 생성 (단순 반환)
+function getRandomTile() {
+    return TILE_TYPES[Math.floor(Math.random() * TILE_TYPES.length)];
+}
+
 // 특수 블록 오작동 방지를 위한 플레이스홀더
 const SPECIAL_PLACEHOLDER = '💎';
 
@@ -1201,24 +1206,8 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// 이벤트 리스너
-startBtn.addEventListener('click', startGame);
-restartBtn.addEventListener('click', startGame);
+// 이벤트 리스너 중복 제거됨
 
-// 리더보드 이벤트 리스너
-showLeaderboardBtn.addEventListener('click', () => {
-    leaderboardOverlay.classList.remove('hidden');
-    loadLeaderboard();
-});
-
-endShowLeaderboardBtn.addEventListener('click', () => {
-    leaderboardOverlay.classList.remove('hidden');
-    loadLeaderboard();
-});
-
-closeLeaderboardBtn.addEventListener('click', () => {
-    leaderboardOverlay.classList.add('hidden');
-});
 
 // 엔터키 리스너
 playerNameInput.addEventListener('keypress', (e) => {
