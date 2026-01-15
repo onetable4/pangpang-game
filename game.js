@@ -80,7 +80,8 @@ function initGame() {
     specialBoard = [];
     selectedTile = null;
     score = 0;
-    combo = 1;
+    combo = 0; // 콤보는 0부터 시작
+    lastMatchTime = 0; // 시간 기반 콤보 초기화
     isProcessing = false;
     timeRemaining = GAME_DURATION;
 
@@ -1121,9 +1122,12 @@ async function processMatches(swappedTiles = null) {
     const currentTime = Date.now();
     if (lastMatchTime > 0 && (currentTime - lastMatchTime) > 2000) {
         // 2초 경과 -> 콤보 리셋
-        combo = 1;
-        updateCombo();
+        combo = 0;
     }
+
+    // 콤보 증가 (매치 성공 시)
+    combo++;
+    updateCombo();
 
     // 각 그룹별 점수 계산 및 특수 블록 생성 확인
     for (const group of groups) {
@@ -1139,11 +1143,13 @@ async function processMatches(swappedTiles = null) {
             baseScore = 200; // 5개 이상
         }
 
-        // 콤보 멀티플라이어
+        // 콤보 멀티플라이어 (수정된 범위)
         let comboMultiplier = 1.0;
         if (combo >= 11) {
+            comboMultiplier = 3.0;
+        } else if (combo >= 8) {
             comboMultiplier = 2.5;
-        } else if (combo >= 6) {
+        } else if (combo >= 5) {
             comboMultiplier = 2.0;
         } else if (combo >= 2) {
             comboMultiplier = 1.5;
@@ -1262,12 +1268,8 @@ async function processMatches(swappedTiles = null) {
         updateScore();
         showScorePopup('+10 연쇄');
 
-        // 콤보는 증가시키지 않음 (시간 기반 콤보만 사용)
+        // 콤보는 유지 (시간 기반 콤보만 사용, 연쇄는 콤보 증가하지 않음)
         await processMatches(null); // 연쇄는 스왑 주체 없음
-    } else {
-        // 매치가 없으면 콤보 증가 (다음 매치를 위한 준비)
-        combo++;
-        updateCombo();
     }
 }
 
