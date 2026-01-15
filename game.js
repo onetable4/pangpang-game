@@ -1110,7 +1110,7 @@ function findMatches() {
 
 // 매치 처리 및 특수 블록 생성
 // 매치 처리 및 특수 블록 생성
-async function processMatches(swappedTiles = null, isUserMatch = false) {
+async function processMatches(swappedTiles = null) {
     // findMatches가 이미 그룹화된 결과를 반환함
     const groups = findMatches();
     if (groups.length === 0) return;
