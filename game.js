@@ -833,7 +833,7 @@ async function swapTiles(row1, col1, row2, col2) {
 
         // 특수 블록이 발동되지 않았다면 일반 매치 처리
         if (!specialActivated) {
-            await processMatches(swappedTiles);
+            await processMatches(swappedTiles, true); // 사용자 매치
         }
 
     } else {
@@ -1113,21 +1113,27 @@ function findMatches() {
 
 // 매치 처리 및 특수 블록 생성
 // 매치 처리 및 특수 블록 생성
-async function processMatches(swappedTiles = null) {
+async function processMatches(swappedTiles = null, isUserMatch = false) {
     // findMatches가 이미 그룹화된 결과를 반환함
     const groups = findMatches();
     if (groups.length === 0) return;
 
-    // 시간 기반 콤보 체크 (2초 이내 매치 시 콤보 유지)
-    const currentTime = Date.now();
-    if (lastMatchTime > 0 && (currentTime - lastMatchTime) > 2000) {
-        // 2초 경과 -> 콤보 리셋
-        combo = 0;
-    }
+    // 사용자가 직접 한 매치일 때만 시간 체크 및 콤보 증가
+    if (isUserMatch) {
+        // 시간 기반 콤보 체크 (2초 이내 매치 시 콤보 유지)
+        const currentTime = Date.now();
+        if (lastMatchTime > 0 && (currentTime - lastMatchTime) > 2000) {
+            // 2초 경과 -> 콤보 리셋
+            combo = 0;
+        }
 
-    // 콤보 증가 (매치 성공 시)
-    combo++;
-    updateCombo();
+        // 콤보 증가 (매치 성공 시)
+        combo++;
+        updateCombo();
+
+        // 마지막 매치 시각 업데이트
+        lastMatchTime = Date.now();
+    }
 
     // 각 그룹별 점수 계산 및 특수 블록 생성 확인
     for (const group of groups) {
@@ -1250,10 +1256,7 @@ async function processMatches(swappedTiles = null) {
 
     updateScore();
 
-    // 마지막 매치 시각 업데이트
-    lastMatchTime = Date.now();
-
-    // 타일 떨어뜨리고 채우기 (activateSpecialBlock 내부에서도 호출되지만, 여기서도 다시 확인)
+    // 타일 떨어뜨리고 채우기
     await dropTiles();
     await fillBoard();
     renderBoard();
@@ -1268,8 +1271,8 @@ async function processMatches(swappedTiles = null) {
         updateScore();
         showScorePopup('+10 연쇄');
 
-        // 콤보는 유지 (시간 기반 콤보만 사용, 연쇄는 콤보 증가하지 않음)
-        await processMatches(null); // 연쇄는 스왑 주체 없음
+        // 연쇄는 사용자 매치가 아니므로 isUserMatch=false
+        await processMatches(null, false);
     }
 }
 
@@ -1342,7 +1345,7 @@ function updateCombo() {
         comboDisplay.textContent = '-';
         comboDisplay.classList.remove('combo-burst');
     } else {
-        comboDisplay.textContent = `${combo} 콤보`;
+        comboDisplay.textContent = `x${combo}`;
         if (combo > 1) {
             comboDisplay.classList.add('combo-burst');
             setTimeout(() => comboDisplay.classList.remove('combo-burst'), 300);
