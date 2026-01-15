@@ -30,6 +30,7 @@ let specialBoard = []; // 특수 블록 정보 저장
 let selectedTile = null;
 let score = 0;
 let combo = 1;
+let lastMatchTime = 0; // 마지막 매치 시각 (시간 기반 콤보용)
 let isProcessing = false;
 let gameStarted = false;
 let gameTimer = null;
@@ -730,7 +731,7 @@ async function activateSpecialBlock(row, col) {
         }
     });
 
-    const clearScore = uniqueTiles.length * 40 * combo; // 점수 상향
+    const clearScore = uniqueTiles.length * 50; // 특수블록 점수 증가 (40 -> 50)
     score += clearScore;
     updateScore();
     showScorePopup(clearScore);
@@ -1115,12 +1116,39 @@ async function processMatches(swappedTiles = null) {
     const groups = findMatches();
     if (groups.length === 0) return;
 
+    // 시간 기반 콤보 체크 (2초 이내 매치 시 콤보 유지)
+    const currentTime = Date.now();
+    if (lastMatchTime > 0 && (currentTime - lastMatchTime) > 2000) {
+        // 2초 경과 -> 콤보 리셋
+        combo = 1;
+        updateCombo();
+    }
+
     // 각 그룹별 점수 계산 및 특수 블록 생성 확인
     for (const group of groups) {
         const tileCount = group.tiles.length;
 
-        // 점수
-        const matchScore = tileCount * 10 * combo; // 기본 점수
+        // 매치 크기별 기본 점수
+        let baseScore;
+        if (tileCount === 3) {
+            baseScore = 30;
+        } else if (tileCount === 4) {
+            baseScore = 100;
+        } else {
+            baseScore = 200; // 5개 이상
+        }
+
+        // 콤보 멀티플라이어
+        let comboMultiplier = 1.0;
+        if (combo >= 11) {
+            comboMultiplier = 2.5;
+        } else if (combo >= 6) {
+            comboMultiplier = 2.0;
+        } else if (combo >= 2) {
+            comboMultiplier = 1.5;
+        }
+
+        const matchScore = Math.floor(baseScore * comboMultiplier);
         score += matchScore;
         showScorePopup(matchScore);
 
@@ -1144,6 +1172,12 @@ async function processMatches(swappedTiles = null) {
             } else {
                 specialType = SPECIAL_TYPES.V_LINE;
             }
+        }
+
+        // 특수 블록 생성 시 보너스 점수
+        if (specialType) {
+            score += 50;
+            showScorePopup('+50 특수!');
         }
 
         // 특수 블록 생성 위치 결정
@@ -1208,7 +1242,9 @@ async function processMatches(swappedTiles = null) {
     }
 
     updateScore();
-    // 점수 업데이트 딜레이 제거 (즉시 반응)
+
+    // 마지막 매치 시각 업데이트
+    lastMatchTime = Date.now();
 
     // 타일 떨어뜨리고 채우기 (activateSpecialBlock 내부에서도 호출되지만, 여기서도 다시 확인)
     await dropTiles();
@@ -1217,20 +1253,20 @@ async function processMatches(swappedTiles = null) {
 
     await delay(250);
 
-    // 연쇄 매치 확인 (재귀 아님, 루프 혹은 호출)
-    // processMatches는 async이므로, 현재 작업 끝난 후 다시 확인
-    // 근데 findMatches가 0이면 종료하므로 재귀 호출해도 됨.
-    // 하지만 무한 루프 방지 위해... 여기서 호출?
-    // swapTiles에서 processMatches 호출 후 다시 확인 구조가 있음.
-    // 여기서는 "연쇄"를 위해 자체적으로 다시 호출하는 게 맞음.
-    // 단, lastSwappedTile 정보는 연쇄에서는 유효하지 않음 (랜덤 위치 or 중앙).
-
-    // 연쇄 처리를 위해 다시 호출
+    // 연쇄 매치 확인
     const nextMatches = findMatches();
     if (nextMatches.length > 0) {
+        // 연쇄당 소폭 보너스 (+10점)
+        score += 10;
+        updateScore();
+        showScorePopup('+10 연쇄');
+
+        // 콤보는 증가시키지 않음 (시간 기반 콤보만 사용)
+        await processMatches(null); // 연쇄는 스왑 주체 없음
+    } else {
+        // 매치가 없으면 콤보 증가 (다음 매치를 위한 준비)
         combo++;
         updateCombo();
-        await processMatches(null); // 연쇄는 스왑 주체 없음
     }
 }
 
