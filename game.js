@@ -274,6 +274,7 @@ submitScoreBtn.addEventListener('click', async () => {
     // UI 업데이트
     championInputArea.classList.add('hidden');
     submitScoreBtn.classList.add('hidden');
+    endOverlay.classList.add('hidden'); // 중복 등록 방지
 
     // 바로 리더보드 보여주기
     leaderboardOverlay.classList.remove('hidden');
@@ -728,28 +729,16 @@ async function swapTiles(row1, col1, row2, col2) {
         combo = 1;
         updateCombo();
 
-        // 스왑으로 인한 매치이므로, 스왑된 타일 위치를 기준점으로 전달
-        // 사용자가 드래그하여 놓은 위치(targetRow, targetCol)를 기준으로 함
-        // source와 target 중 매치에 포함된 녀석이 기준이 되어야 함.
-        // 하지만 직관적으로 "내가 놓은 곳"에 생기는 게 좋음.
-        const lastSwapped = { row: targetRow, col: targetCol };
+        // 스왑으로 인한 매치이므로, 스왑된 두 타일 위치를 모두 전달
+        const swappedTiles = {
+            source: { row: sourceRow, col: sourceCol },
+            target: { row: targetRow, col: targetCol }
+        };
 
         // 특수 블록 발동 체크 (매치된 타일에 특수 블록이 섞여있으면 발동)
         let specialActivated = false;
 
-        // 매치된 타일들 수집
-        const allMatchedTiles = new Set();
-        matches.forEach(m => m.tiles.forEach(t => allMatchedTiles.add(`${t.row},${t.col}`)));
-
-        // 특수 블록이 매치에 포함되어 있다면 발동
-        /* 
-           기존 로직: 매치 처리 후 특수 블록 발동? 
-           개선 로직: 매치 처리 과정에서 특수 블록이 터지면 그 효과도 같이 처리.
-           processMatches 내부에서 처리하므로 여기서는 호출만 함.
-        */
-
-        // 스왑한 두 타일 중 특수 블록이 있다면? 
-        // 콤보 규칙: "스왑 + 매치 + 특수 블록" -> 특수 블록 효과 발동
+        // 스왑한 두 타일 중 특수 블록이 있다면?
         if (specialBoard[targetRow][targetCol]) {
             await activateSpecialBlock(targetRow, targetCol);
             specialActivated = true;
@@ -761,10 +750,7 @@ async function swapTiles(row1, col1, row2, col2) {
 
         // 특수 블록이 발동되지 않았다면 일반 매치 처리
         if (!specialActivated) {
-            await processMatches(lastSwapped);
-        } else {
-            // 특수 블록 발동 후 빈자리 채우고 다시 매치 확인 로직은 activateSpecialBlock 내부에 있음
-            // 하지만 여기서도 보장해야 함.
+            await processMatches(swappedTiles);
         }
 
     } else {
@@ -1023,7 +1009,7 @@ function findMatches() {
 
 // 매치 처리 및 특수 블록 생성
 // 매치 처리 및 특수 블록 생성
-async function processMatches(lastSwappedTile = null) {
+async function processMatches(swappedTiles = null) {
     // findMatches가 이미 그룹화된 결과를 반환함
     const groups = findMatches();
     if (groups.length === 0) return;
@@ -1063,16 +1049,24 @@ async function processMatches(lastSwappedTile = null) {
         let targetRow = group.tiles[0].row;
         let targetCol = group.tiles[0].col;
 
-        // 1. 마지막 스왑한 타일이 그룹 내에 있으면 그 위치 우선
-        if (lastSwappedTile) {
-            const inGroup = group.tiles.some(t => t.row === lastSwappedTile.row && t.col === lastSwappedTile.col);
-            if (inGroup) {
-                targetRow = lastSwappedTile.row;
-                targetCol = lastSwappedTile.col;
-            } else {
-                // 스왑 위치가 없으면 중앙값
-                targetRow = group.tiles[Math.floor(group.tiles.length / 2)].row;
-                targetCol = group.tiles[Math.floor(group.tiles.length / 2)].col;
+        // 스왑한 타일 위치들 중 그룹 내에 있는 것 우선
+        if (swappedTiles) {
+            // source 위치가 그룹에 포함되어 있는지 확인
+            const sourceInGroup = group.tiles.some(t =>
+                t.row === swappedTiles.source.row && t.col === swappedTiles.source.col);
+            // target 위치가 그룹에 포함되어 있는지 확인
+            const targetInGroup = group.tiles.some(t =>
+                t.row === swappedTiles.target.row && t.col === swappedTiles.target.col);
+
+            // source가 그룹에 있으면 source 위치 사용
+            if (sourceInGroup) {
+                targetRow = swappedTiles.source.row;
+                targetCol = swappedTiles.source.col;
+            }
+            // target이 그룹에 있으면 target 위치 사용 (source보다 우선)
+            if (targetInGroup) {
+                targetRow = swappedTiles.target.row;
+                targetCol = swappedTiles.target.col;
             }
         } else {
             // 스왑 정보 없으면 중앙값
@@ -1139,32 +1133,59 @@ async function processMatches(lastSwappedTile = null) {
     }
 }
 
-// 타일 떨어뜨리기
+// 타일 떨어뜨리기 (특수블록은 고정)
 async function dropTiles() {
     for (let col = 0; col < BOARD_SIZE; col++) {
-        let emptyRow = BOARD_SIZE - 1;
+        // 특수블록 위치 기록
+        const specialPositions = [];
+        for (let row = 0; row < BOARD_SIZE; row++) {
+            if (specialBoard[row][col]) {
+                specialPositions.push({
+                    row: row,
+                    type: board[row][col],
+                    special: specialBoard[row][col]
+                });
+            }
+        }
 
-        for (let row = BOARD_SIZE - 1; row >= 0; row--) {
-            if (board[row][col] !== null) {
-                if (row !== emptyRow) {
-                    board[emptyRow][col] = board[row][col];
-                    specialBoard[emptyRow][col] = specialBoard[row][col];
-                    board[row][col] = null;
-                    specialBoard[row][col] = null;
-                }
-                emptyRow--;
+        // 일반 타일만 수집 (null과 특수블록 제외)
+        const normalTiles = [];
+        for (let row = 0; row < BOARD_SIZE; row++) {
+            if (board[row][col] !== null && !specialBoard[row][col]) {
+                normalTiles.push(board[row][col]);
+            }
+        }
+
+        // 일단 해당 열 전체 초기화
+        for (let row = 0; row < BOARD_SIZE; row++) {
+            board[row][col] = null;
+            specialBoard[row][col] = null;
+        }
+
+        // 특수블록 먼저 원래 위치에 복원
+        for (const sp of specialPositions) {
+            board[sp.row][col] = sp.type;
+            specialBoard[sp.row][col] = sp.special;
+        }
+
+        // 일반 타일을 아래에서부터 특수블록 피해서 채움
+        let tileIndex = normalTiles.length - 1;
+        for (let row = BOARD_SIZE - 1; row >= 0 && tileIndex >= 0; row--) {
+            if (board[row][col] === null) {
+                board[row][col] = normalTiles[tileIndex];
+                tileIndex--;
             }
         }
     }
 }
 
-// 빈 칸 채우기
+// 빈 칸 채우기 (특수블록 위쪽에서 채움)
 async function fillBoard() {
     for (let col = 0; col < BOARD_SIZE; col++) {
         for (let row = 0; row < BOARD_SIZE; row++) {
             if (board[row][col] === null) {
                 board[row][col] = getRandomTile();
-                specialBoard[row][col] = null;
+                // specialBoard[row][col] = null; 이미 null임
             }
         }
     }
