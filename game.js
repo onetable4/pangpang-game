@@ -753,9 +753,6 @@ async function activateSpecialBlock(row, col) {
         specialBoard[r][c] = null;
     });
 
-    combo++;
-    updateCombo();
-
     // 떨어뜨리고 채우기
     await dropTiles();
     await fillBoard();
@@ -766,11 +763,8 @@ async function activateSpecialBlock(row, col) {
     // 연쇄 매치 확인
     const matches = findMatches();
     if (matches.length > 0) {
-        await processMatches();
+        await processMatches(null, false); // 특수블록 발동은 사용자 매치가 아님
     }
-
-    combo = 1;
-    updateCombo();
 
     // 가능한 수가 있는지 확인
     if (!hasPossibleMoves()) {
@@ -978,7 +972,7 @@ async function shuffleBoard() {
     // 셔플 후 매치가 있으면 처리
     const matches = findMatches();
     if (matches.length > 0) {
-        await processMatches();
+        await processMatches(null, false); // 셔플 후 매치는 사용자 매치가 아님
     }
 
     // 타이머 재개
