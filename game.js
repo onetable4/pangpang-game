@@ -582,9 +582,10 @@ function renderBoard() {
             tile.addEventListener('click', () => handleTileClick(row, col));
 
 
-            // 터치 이벤트 (모바일 스와이프)
-            tile.addEventListener('touchstart', (e) => handleTouchStart(e, row, col), { passive: true });
-            tile.addEventListener('touchend', (e) => handleTouchEnd(e, row, col), { passive: true });
+            // 터치 이벤트 (모바일 스와이프) - iOS Safari 스크롤 방지를 위해 passive: false
+            tile.addEventListener('touchstart', (e) => handleTouchStart(e, row, col), { passive: false });
+            tile.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+            tile.addEventListener('touchend', (e) => handleTouchEnd(e, row, col), { passive: false });
 
             gameBoard.appendChild(tile);
         }
@@ -641,6 +642,7 @@ function isAdjacent(row1, col1, row2, col2) {
 
 // 터치 시작 핸들러
 function handleTouchStart(e, row, col) {
+    e.preventDefault(); // iOS Safari 스크롤 방지
     if (isProcessing || !gameStarted) return;
 
     const touch = e.touches[0];
